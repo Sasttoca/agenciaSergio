@@ -3,5 +3,5 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/agenciaSergio/', // Reemplaza con el nombre exacto de tu repositorio de GitHub (fíjate en mayúsculas/minúsculas)
+  base: './' // Esto asegura que busque los archivos en la ruta relativa correcta
 })
