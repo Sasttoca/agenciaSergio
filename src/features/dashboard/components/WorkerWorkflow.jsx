@@ -17,6 +17,10 @@ const WorkerWorkflow = ({ businesses, tasks, expandedBusinesses, onToggleExpand,
           const businessTasks = tasks.filter(t => t.businessId === business.id);
           const isExpanded = expandedBusinesses[business.id] !== false;
 
+          const totalTasks = businessTasks.length;
+          const completedTasks = businessTasks.filter(t => t.status === 'Realizada').length;
+          const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
           return (
             <div 
               key={business.id} 
@@ -34,6 +38,9 @@ const WorkerWorkflow = ({ businesses, tasks, expandedBusinesses, onToggleExpand,
                 <div className="flex items-center gap-3 text-slate-400">
                   <span className="text-xs bg-[#060814] border border-slate-800 px-2.5 py-1 rounded-full text-slate-300 font-medium">
                     {businessTasks.filter(t => t.status === 'Pendiente').length} pendientes
+                  </span>
+                  <span className="text-xs bg-[#060814] border border-slate-800 px-2.5 py-1 rounded-full text-slate-300 font-medium">
+                    {percentage}% completado
                   </span>
                   {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
