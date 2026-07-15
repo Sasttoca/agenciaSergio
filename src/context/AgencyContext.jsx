@@ -1,4 +1,6 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
+import { businessService } from '../services/businessService';
+import { taskService } from '../services/taskService';
 
 export const AgencyContext = createContext();
 
@@ -7,42 +9,40 @@ const taskTemplates = [
   'Creación de gráficos', 'Redacción de copies', 'Reporte semanal'
 ];
 
+// Generador de estructuras de tareas plantilla para nuevos negocios
 const generateTasksForBusiness = (businessId) => {
   return taskTemplates.map((title, index) => {
-    const uniqueId = Math.random().toString(36).substring(2, 7);
     return {
-      id: `${businessId}-${index}-${uniqueId}`,
       title: title,
       businessId: businessId,
       status: 'Pendiente',
-      dueDate: `2026-06-0${(index % 6) + 1}`, // Sincronizado para que caiga en la primera semana de junio de 2026
+      dueDate: `2026-06-0${(index % 6) + 1}`,
       notes: 'Tarea predeterminada del sistema.'
     };
   });
 };
 
-const initialBusinesses = [
-  { id: '1', name: 'Tech Solutions', industry: 'Software', workerId: 'Ana Developer' },
-  { id: '2', name: 'Green Cafe', industry: 'Gastronomía', workerId: 'Carlos Media' }
-];
-
-const initialTasks = [
-  ...generateTasksForBusiness('1'),
-  ...generateTasksForBusiness('2'),
-  { id: 'admin-1', title: 'Reunión de equipo', businessId: 'admin', status: 'Pendiente', dueDate: '2026-06-28', notes: 'Revisión trimestral.' },
-  { id: 'admin-2', title: 'Análisis de rendimiento', businessId: 'admin', status: 'Pendiente', dueDate: '2026-06-28', notes: 'Revisar métricas de trabajadores.' }
-];
-
 export const AgencyProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
-  const today = "2026-06-28"; // Sincronizado con la fecha real del sistema
+  const today = "2026-06-28";
 
-  // Estados cargados en memoria (volátiles: se borran al recargar F5)
-  const [businesses, setBusinesses] = useState(initialBusinesses);
-  const [tasks, setTasks] = useState(initialTasks);
+  // Inicializamos los estados vacíos sin ningún dato quemado por defecto
+  const [businesses, setBusinesses] = useState([]);
+  const [tasks, setTasks] = useState([]);
 
-  // Mapeado a 'login' para compatibilidad con LoginView
+  // 1. CARGA DE DATOS ASÍNCRONA DESDE FIRESTORE
+  useEffect(() => {
+    const fetchData = async () => {
+      const loadedBusinesses = await businessService.loadBusinesses();
+      const loadedTasks = await taskService.loadTasks();
+      setBusinesses(loadedBusinesses);
+      setTasks(loadedTasks);
+    };
+    fetchData();
+  }, []);
+
+  // Autenticación mockeada en memoria
   const login = (user, pass) => {
     if (pass === '123') {
       const lowerUser = user.toLowerCase();
@@ -51,15 +51,15 @@ export const AgencyProvider = ({ children }) => {
       else if (lowerUser === 'carlos') { setCurrentUser({ name: 'Carlos Media', role: 'worker' }); return { success: true }; }
       else return { success: false, message: 'Usuario no encontrado' };
     } else {
-      return { success: false, message: 'Contraseña incorrectas' };
+      return { success: false, message: 'Contraseña incorrecta' };
     }
   };
 
-  // Mapeado a 'logout' para compatibilidad con MainLayout
   const logout = () => {
     setCurrentUser(null);
   };
 
+  // Filtros reactivos basados en el estado en memoria
   const getFilteredBusinesses = () => {
     if (!currentUser) return [];
     return currentUser.role === 'admin' 
@@ -78,30 +78,51 @@ export const AgencyProvider = ({ children }) => {
     setExpandedBusinesses(prev => ({ ...prev, [businessId]: prev[businessId] === false }));
   };
 
-  const toggleTaskStatus = (taskId) => {
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: t.status === 'Pendiente' ? 'Realizada' : 'Pendiente' } : t));
-  };
-
-  const addBusiness = (name, industry, workerId) => {
-    const businessId = Date.now().toString();
-    const newBusiness = { id: businessId, name, industry, workerId };
-    const newTasks = generateTasksForBusiness(businessId);
+  // 2. MODIFICAR ESTADO DE TAREA EN LA NUBE
+  const toggleTaskStatus = async (taskId) => {
+    const taskToUpdate = tasks.find(t => t.id === taskId);
+    if (!taskToUpdate) return;
     
-    setBusinesses([...businesses, newBusiness]);
-    setTasks([...tasks, ...newTasks]);
+    const newStatus = taskToUpdate.status === 'Pendiente' ? 'Realizada' : 'Pendiente';
+    
+    await taskService.updateTask(taskId, { status: newStatus });
+    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
-  const addTask = (title, businessId, dueDate, notes) => {
-    const newTask = { id: Date.now().toString(), title, businessId, status: 'Pendiente', dueDate, notes };
-    setTasks([...tasks, newTask]);
+  // 3. AGREGAR NEGOCIO Y SUS TAREAS AUTOMÁTICAS EN FIRESTORE
+  const addBusiness = async (name, industry, workerId) => {
+    // Registramos la empresa y obtenemos el ID real generado por Firebase
+    const newBusiness = await businessService.addBusiness({ name, industry, workerId });
+    setBusinesses(prev => [...prev, newBusiness]);
+
+    // Generamos las tareas vinculadas a ese ID real y las guardamos individualmente
+    const newTasksData = generateTasksForBusiness(newBusiness.id);
+    const savedTasks = [];
+    
+    for (const taskData of newTasksData) {
+      const savedTask = await taskService.addTask(taskData);
+      savedTasks.push(savedTask);
+    }
+    
+    setTasks(prev => [...prev, ...savedTasks]);
   };
 
-  const deleteTask = (taskId) => {
-    setTasks(tasks.filter(t => t.id !== taskId));
+  // 4. CREAR TAREA MANUAL EN FIRESTORE
+  const addTask = async (title, businessId, dueDate, notes) => {
+    const newTask = await taskService.addTask({ title, businessId, dueDate, notes, status: 'Pendiente' });
+    setTasks(prev => [...prev, newTask]);
   };
 
-  const editTask = (taskId, updatedTitle, updatedNotes) => {
+  // 5. EDITAR TAREA EN FIRESTORE
+  const editTask = async (taskId, updatedTitle, updatedNotes) => {
+    await taskService.updateTask(taskId, { title: updatedTitle, notes: updatedNotes });
     setTasks(tasks.map(t => t.id === taskId ? { ...t, title: updatedTitle, notes: updatedNotes } : t));
+  };
+
+  // 6. ELIMINAR TAREA EN FIRESTORE
+  const deleteTask = async (taskId) => {
+    await taskService.deleteTask(taskId);
+    setTasks(tasks.filter(t => t.id !== taskId));
   };
 
   return (

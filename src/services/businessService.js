@@ -1,23 +1,42 @@
-const LOCAL_STORAGE_KEY = 'agency_businesses';
+import { db } from './firebase'; 
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 
-// Datos semilla por si el almacenamiento local está vacío
-const defaultBusinesses = [
-  { id: 'b1', name: 'Alpha Digital', industry: 'Marketing', workerId: 'Ana Developer' },
-  { id: 'b2', name: 'Nova Store', industry: 'E-commerce', workerId: 'Carlos Media' },
-  { id: 'b3', name: 'Infinity Tech', industry: 'Software', workerId: 'Ana Developer' }
-];
+// Nombre de la colección en Firestore
+const COLLECTION_NAME = 'businesses';
 
 export const businessService = {
-  loadBusinesses: () => {
-    const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!stored) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(defaultBusinesses));
-      return defaultBusinesses;
+  // 1. Leer los negocios desde la nube
+  loadBusinesses: async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+      const businesses = [];  
+      
+      querySnapshot.forEach((doc) => {
+        // Unimos el ID generado por Firebase con los datos del documento
+        businesses.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return businesses;
+    } catch (error) {
+      console.error("Error al cargar negocios desde Firestore: ", error);
+      return [];
     }
-    return JSON.parse(stored);
   },
 
-  saveBusinesses: (businesses) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(businesses));
+  // 2. Guardar un nuevo negocio en la nube de forma individual
+  addBusiness: async (newBusiness) => {
+    try {
+      // Firebase genera automáticamente el ID único del documento
+      const docRef = await addDoc(collection(db, COLLECTION_NAME), {
+        name: newBusiness.name,
+        industry: newBusiness.industry,
+        workerId: newBusiness.workerId
+      });
+      
+      return { id: docRef.id, ...newBusiness };
+    } catch (error) {
+      console.error("Error al guardar el negocio en Firestore: ", error);
+      throw error;
+    }
   }
 };
