@@ -4,6 +4,18 @@ Una aplicación web orientada a la gestión operativa de agencias de marketing d
 
 ---
 
+## 🚀 Novedades de la Versión: Migración a Firebase (Cloud Firestore)
+
+La aplicación ha sido migrada con éxito de una arquitectura de persistencia volátil local a una **solución en la nube en tiempo real**, utilizando **Firebase** como *Backend-as-a-Service (BaaS)*.
+
+### Cambios Clave en la Arquitectura:
+* **Persistencia en la Nube:** Integración de **Cloud Firestore** para almacenar las colecciones de clientes (`businesses`) y actividades (`tasks`).
+* **Servicios Asíncronos:** La capa `services/` ahora consume directamente la SDK de Firebase de manera asíncrona, desacoplando por completo la lógica de consulta y mutación de datos de la interfaz de usuario.
+* **Contexto Reactivo Real:** El archivo `AgencyContext.jsx` fue reescrito para sincronizar el estado global de React con los documentos de Firestore mediante llamadas asíncronas e inicialización de estados vacíos (sin datos quemados o por defecto).
+* **Seguridad de Credenciales:** Migración y protección de las llaves de acceso del proyecto mediante variables de entorno en Vite.
+
+---
+
 ## Arquitectura del Proyecto y Estructura de Directorios
 
 El proyecto se encuentra estructurado de forma modular para mitigar el acoplamiento propio de los modelos monolíticos. El código fuente se organiza en componentes autocontenidos dentro del directorio `src/features/`, garantizando la independencia, escalabilidad y mantenibilidad de cada funcionalidad del negocio.
@@ -14,7 +26,7 @@ A continuación se detalla el propósito y la responsabilidad de cada directorio
 * **`components/ui/`**: Centraliza los componentes atómicos y reutilizables de la interfaz de usuario que carecen de lógica de negocio directa (por ejemplo, `CustomModal.jsx`).
 * **`context/`**: Contiene el punto de control del estado global de la aplicación (`AgencyContext.jsx`). Distribuye la información de autenticación, la sesión del usuario y las mutaciones de datos a través de la API Context de React.
 * **`layouts/`**: Define los componentes estructurales o esquemas visuales compartidos de la interfaz. El archivo `MainLayout.jsx` gestiona la barra de navegación lateral fija y el contenedor dinámico principal.
-* **`services/`**: Capa dedicada exclusivamente a la abstracción de la persistencia de datos y utilidades de almacenamiento independiente de la interfaz gráfica (`businessService.js`, `taskService.js`).
+* **`services/`**: Capa dedicada exclusivamente a la abstracción de la persistencia de datos y utilidades de almacenamiento independiente de la interfaz gráfica (`businessService.js`, `firebase.js`, `taskService.js`).
 
 ---
 
@@ -48,6 +60,7 @@ Cada directorio representa un dominio o funcionalidad de negocio específica y c
 
 * **React** (Estructura basada en Hooks, Context API y Arquitectura Modular)
 * **Vite** (Entorno de ejecución y construcción del proyecto)
+* **Firebase & Cloud Firestore** (Persistencia, backend y base de datos en tiempo real)
 * **Tailwind CSS v4** (Procesamiento de estilos optimizado mediante escaneo nativo)
 * **Lucide React** (Biblioteca de vectores para la iconografía del sistema)
 
