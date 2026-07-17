@@ -4,11 +4,6 @@ import { taskService } from '../services/taskService';
 
 export const AgencyContext = createContext();
 
-const taskTemplates = [
-  'Planificación de contenido', 'Revisión de métricas', 'Interacción con comunidad', 
-  'Creación de gráficos', 'Redacción de copies', 'Reporte semanal'
-];
-
 export const AgencyProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
@@ -83,6 +78,26 @@ export const AgencyProvider = ({ children }) => {
     setBusinesses(prev => [...prev, newBusiness]);
   };
 
+  // 3.1. ELIMINAR NEGOCIO Y SUS TAREAS ASOCIADAS (ELIMINACIÓN EN CASCADA)
+  const deleteBusiness = async (businessId) => {
+    try {
+      // A. Identificamos todas las tareas asociadas al negocio
+      const tasksToDelete = tasks.filter(t => t.businessId === businessId);
+
+      // B. Las eliminamos de Firestore en paralelo
+      const deletePromises = tasksToDelete.map(t => taskService.deleteTask(t.id));
+      await Promise.all(deletePromises);
+
+      // C. Eliminamos el negocio de Firestore
+      await businessService.deleteBusiness(businessId);
+
+      // D. Actualizamos el estado local de React filtrando lo eliminado
+      setBusinesses(prev => prev.filter(b => b.id !== businessId));
+      setTasks(prev => prev.filter(t => t.businessId !== businessId));
+    } catch (error) {
+      console.error("Error al procesar la eliminación en cascada: ", error);
+    }
+  };
 
   // 4. CREAR TAREA MANUAL EN FIRESTORE
   const addTask = async (title, businessId, dueDate, notes) => {
@@ -116,6 +131,7 @@ export const AgencyProvider = ({ children }) => {
       toggleBusinessExpansion,
       toggleTaskStatus,
       addBusiness,
+      deleteBusiness, // <-- Pasamos el método para consumirlo en la UI
       addTask,
       deleteTask,
       editTask

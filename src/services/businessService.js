@@ -1,5 +1,5 @@
 import { db } from './firebase'; 
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 
 // Nombre de la colección en Firestore
 const COLLECTION_NAME = 'businesses';
@@ -36,6 +36,18 @@ export const businessService = {
       return { id: docRef.id, ...newBusiness };
     } catch (error) {
       console.error("Error al guardar el negocio en Firestore: ", error);
+      throw error;
+    }
+  },
+
+  // 3. Eliminar un negocio de la nube por su ID
+  deleteBusiness: async (businessId) => {
+    try {
+      const docRef = doc(db, COLLECTION_NAME, businessId);
+      await deleteDoc(docRef);
+      return true;
+    } catch (error) {
+      console.error("Error al eliminar el negocio de Firestore: ", error);
       throw error;
     }
   }

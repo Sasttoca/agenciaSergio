@@ -14,6 +14,15 @@ La aplicación ha sido migrada con éxito de una arquitectura de persistencia vo
 * **Contexto Reactivo Real:** El archivo `AgencyContext.jsx` fue reescrito para sincronizar el estado global de React con los documentos de Firestore mediante llamadas asíncronas e inicialización de estados vacíos (sin datos quemados o por defecto).
 * **Seguridad de Credenciales:** Migración y protección de las llaves de acceso del proyecto mediante variables de entorno en Vite.
 
+### 🛠️ Optimizaciones de UI, UX e Integridad de Datos
+
+Además de la migración principal, se implementaron mejoras críticas en el flujo de trabajo y la interfaz de usuario:
+
+*   **Creación de Negocios desde Cero:** Se eliminó la generación automática de tareas predeterminadas rígidas. Ahora, cada negocio se registra completamente vacío en Firestore, agilizando el flujo del sistema.
+*   **Gestión de Fechas Optimizada:** El formulario de creación de tareas se inicializa completamente limpio y cuenta con un selector de fecha nativo (`type="date"`) adaptado al tema oscuro mediante `scheme-dark`.
+*   **Eliminación en Cascada:** Se implementó el borrado de clientes en la interfaz mediante un botón de papelera. Al ejecutarse, el sistema elimina de forma automática tanto el negocio en `businesses` como todas sus tareas asociadas en `tasks` en la base de datos de Firebase, evitando registros huérfanos.
+*   **Modal de Confirmación Personalizado:** Se sustituyó la alerta clásica del navegador por una ventana emergente personalizada en modo oscuro con diseño coherente al dashboard.
+*   **Espaciado y Layout Mejorado:** Se integró un contenedor con padding responsivo (`p-6 md:p-8`) en la vista de tarjetas de negocios para evitar que los componentes colisionen con los bordes del dashboard.
 ---
 
 ## Arquitectura del Proyecto y Estructura de Directorios
