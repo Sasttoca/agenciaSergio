@@ -4,7 +4,7 @@ Una aplicación web orientada a la gestión operativa de agencias de marketing d
 
 ---
 
-## 🚀 Novedades de la Versión: Migración a Firebase (Cloud Firestore)
+## 🚀 Novedades de la Versión:
 
 La aplicación ha sido migrada con éxito de una arquitectura de persistencia volátil local a una **solución en la nube en tiempo real**, utilizando **Firebase** como *Backend-as-a-Service (BaaS)*.
 
@@ -14,7 +14,7 @@ La aplicación ha sido migrada con éxito de una arquitectura de persistencia vo
 * **Contexto Reactivo Real:** El archivo `AgencyContext.jsx` fue reescrito para sincronizar el estado global de React con los documentos de Firestore mediante llamadas asíncronas e inicialización de estados vacíos (sin datos quemados o por defecto).
 * **Seguridad de Credenciales:** Migración y protección de las llaves de acceso del proyecto mediante variables de entorno en Vite.
 
-### 🛠️ Optimizaciones de UI, UX e Integridad de Datos
+### Optimizaciones de UI, UX e Integridad de Datos
 
 Además de la migración principal, se implementaron mejoras críticas en el flujo de trabajo y la interfaz de usuario:
 

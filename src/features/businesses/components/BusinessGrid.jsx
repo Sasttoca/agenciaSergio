@@ -2,11 +2,15 @@ import React, { useState, useContext } from 'react';
 import { Briefcase, User, Trash2, AlertTriangle } from 'lucide-react';
 import { AgencyContext } from '../../../context/AgencyContext';
 
-const BusinessGrid = ({ businesses }) => {
-  const { deleteBusiness } = useContext(AgencyContext);
+const BusinessGrid = ({ businesses: propBusinesses }) => {
+  // 1. Consumimos deleteBusiness y la función para obtener los negocios filtrados por rol
+  const { deleteBusiness, getFilteredBusinesses } = useContext(AgencyContext);
   
   // Estado para controlar qué negocio se quiere eliminar y abrir el modal
   const [businessToDelete, setBusinessToDelete] = useState(null);
+
+  // 2. Lógica inteligente: Si el padre le pasa negocios, usa esos; si no, los trae directo del contexto en tiempo real
+  const businesses = propBusinesses || getFilteredBusinesses();
 
   const handleDeleteClick = (business) => {
     setBusinessToDelete(business);
@@ -21,7 +25,7 @@ const BusinessGrid = ({ businesses }) => {
 
   return (
     <>
-      {/* 1. AGREGAMOS ESTE CONTENEDOR CON PADDING PARA SEPARAR DE LOS BORDES */}
+      {/* Contenedor con padding para separar de los bordes */}
       <div className="p-6 md:p-8 w-full">
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -68,7 +72,7 @@ const BusinessGrid = ({ businesses }) => {
           )}
         </div>
 
-      </div> {/* FIN DEL CONTENEDOR DE ESPACIADO */}
+      </div>
 
       {/* MODAL DE CONFIRMACIÓN PERSONALIZADO */}
       {businessToDelete && (
