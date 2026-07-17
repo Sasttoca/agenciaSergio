@@ -9,19 +9,6 @@ const taskTemplates = [
   'Creación de gráficos', 'Redacción de copies', 'Reporte semanal'
 ];
 
-// Generador de estructuras de tareas plantilla para nuevos negocios
-const generateTasksForBusiness = (businessId) => {
-  return taskTemplates.map((title, index) => {
-    return {
-      title: title,
-      businessId: businessId,
-      status: 'Pendiente',
-      dueDate: `2026-06-0${(index % 6) + 1}`,
-      notes: 'Tarea predeterminada del sistema.'
-    };
-  });
-};
-
 export const AgencyProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
@@ -89,23 +76,13 @@ export const AgencyProvider = ({ children }) => {
     setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
-  // 3. AGREGAR NEGOCIO Y SUS TAREAS AUTOMÁTICAS EN FIRESTORE
+  // 3. AGREGAR NEGOCIO TOTALMENTE VACÍO EN FIRESTORE
   const addBusiness = async (name, industry, workerId) => {
-    // Registramos la empresa y obtenemos el ID real generado por Firebase
+    // Registramos únicamente la empresa y obtenemos el ID real generado por Firebase
     const newBusiness = await businessService.addBusiness({ name, industry, workerId });
     setBusinesses(prev => [...prev, newBusiness]);
-
-    // Generamos las tareas vinculadas a ese ID real y las guardamos individualmente
-    const newTasksData = generateTasksForBusiness(newBusiness.id);
-    const savedTasks = [];
-    
-    for (const taskData of newTasksData) {
-      const savedTask = await taskService.addTask(taskData);
-      savedTasks.push(savedTask);
-    }
-    
-    setTasks(prev => [...prev, ...savedTasks]);
   };
+
 
   // 4. CREAR TAREA MANUAL EN FIRESTORE
   const addTask = async (title, businessId, dueDate, notes) => {

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Plus, Calendar, FileText } from 'lucide-react';
-
+//metodo para crear una nueva tarea mediante un formulario 
 const TaskForm = ({ businesses, onAddTask }) => {
   const [title, setTitle] = useState('');
   const [businessId, setBusinessId] = useState('admin');
-  const [dueDate, setDueDate] = useState('2026-06-28');
+  const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
 
   const handleSubmit = (e) => {
@@ -12,7 +12,10 @@ const TaskForm = ({ businesses, onAddTask }) => {
     if (!title.trim() || !dueDate) return;
 
     onAddTask(title, businessId, dueDate, notes);
+    
+    // Limpiamos todos los campos tras el registro exitoso
     setTitle('');
+    setDueDate(''); 
     setNotes('');
   };
 
@@ -35,7 +38,7 @@ const TaskForm = ({ businesses, onAddTask }) => {
         </div>
 
         <div>
-          <label className="text-xs text-slate-400 font-medium block mb-1.5">Vincular a Negocio / Destinatario</label>
+          <label className="text-xs text-slate-400 font-medium block mb-1.5">¿A quien asignara la tarea?</label>
           <select 
             className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm appearance-none cursor-pointer text-slate-200"
             value={businessId}
@@ -49,11 +52,11 @@ const TaskForm = ({ businesses, onAddTask }) => {
         </div>
 
         <div>
-          <label className="text-xs text-slate-400 font-medium block mb-1.5">Fecha de Vencimiento</label>
+          <label className="text-xs text-slate-400 font-medium block mb-1.5">día que se realizara la tarea</label>
           <div className="relative">
             <input 
               type="date"
-              className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm cursor-pointer text-slate-200"
+              className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm cursor-pointer text-slate-200 scheme-dark" 
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
             />
