@@ -1,10 +1,12 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { businessService } from '../services/businessService';
 import { taskService } from '../services/taskService';
+import { suggestionService } from '../services/suggestionService';
 
 export const AgencyContext = createContext();
 
 export const AgencyProvider = ({ children }) => {
+  const [suggestions, setSuggestions] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
   const today = "2026-06-28";
@@ -18,8 +20,10 @@ export const AgencyProvider = ({ children }) => {
     const fetchData = async () => {
       const loadedBusinesses = await businessService.loadBusinesses();
       const loadedTasks = await taskService.loadTasks();
+      const loadedSuggestions = await suggestionService.loadSuggestions();
       setBusinesses(loadedBusinesses);
       setTasks(loadedTasks);
+      setSuggestions(loadedSuggestions);
     };
     fetchData();
   }, []);
@@ -31,6 +35,12 @@ export const AgencyProvider = ({ children }) => {
       if (lowerUser === 'admin') { setCurrentUser({ name: 'Sergio Admin', role: 'admin' }); return { success: true }; }
       else if (lowerUser === 'ana') { setCurrentUser({ name: 'Ana Developer', role: 'worker' }); return { success: true }; }
       else if (lowerUser === 'carlos') { setCurrentUser({ name: 'Carlos Media', role: 'worker' }); return { success: true }; }
+      else if (lowerUser === 'cliente') { 
+        // Asocia un ID de negocio existente
+        const firstBusinessId = businesses[0]?.id || 'client-business-id';
+        setCurrentUser({ name: 'Cliente Marca', role: 'client', businessId: firstBusinessId }); 
+        return { success: true };
+      }  
       else return { success: false, message: 'Usuario no encontrado' };
     } else {
       return { success: false, message: 'Contraseña incorrecta' };
@@ -117,6 +127,24 @@ export const AgencyProvider = ({ children }) => {
     setTasks(tasks.filter(t => t.id !== taskId));
   };
 
+  // Función para agregar una sugerencia
+  const addSuggestion = async (text) => {
+    if (!currentUser || currentUser.role !== 'client') return;
+    const newSugg = await suggestionService.addSuggestion({
+      businessId: currentUser.businessId,
+      author: currentUser.name,
+      text
+    });
+    setSuggestions(prev => [newSugg, ...prev]);
+  };
+
+  // Función para reiniciar el histórico de sugerencias
+  const clearSuggestions = async () => {
+    await suggestionService.clearSuggestions(suggestions);
+    setSuggestions([]);
+  };
+  
+
   return (
     <AgencyContext.Provider value={{
       currentUser,
@@ -124,6 +152,7 @@ export const AgencyProvider = ({ children }) => {
       today,
       businesses,
       tasks,
+      suggestions,
       login,
       logout,
       getFilteredBusinesses,
@@ -132,6 +161,8 @@ export const AgencyProvider = ({ children }) => {
       toggleTaskStatus,
       addBusiness,
       deleteBusiness, // <-- Pasamos el método para consumirlo en la UI
+      addSuggestion,
+      clearSuggestions,
       addTask,
       deleteTask,
       editTask

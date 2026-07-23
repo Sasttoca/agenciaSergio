@@ -3,6 +3,7 @@ import { AgencyContext } from '../../context/AgencyContext';
 import MetricCards from './components/MetricCards';
 import AdminInternalTasks from './components/AdminInternalTasks';
 import WorkerWorkflow from './components/WorkerWorkflow';
+import SuggestionsWidget from './components/SuggestionsWidget';
 
 const DashboardOverview = () => {
   const { 
@@ -56,6 +57,9 @@ const DashboardOverview = () => {
             />
           </div>
         )}
+      </div>
+      <div className="mt-6">
+        <SuggestionsWidget />
       </div>
     </div>
   );

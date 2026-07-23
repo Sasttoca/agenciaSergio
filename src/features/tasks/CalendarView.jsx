@@ -43,14 +43,18 @@ const CalendarView = () => {
   };
 
   const getFilteredTasks = () => {
-    // 1. Filtrar primero por pertenencia (Admin ve todo, Worker solo lo suyo)
+    // 1. Si el usuario es Cliente, filtramos estrictamente por su businessId
+    if (currentUser?.role === 'client') {
+      return tasks.filter(t => t.businessId === currentUser.businessId);
+    }
+
+    // 2. Lógica para Admin y Worker (preexistente)[cite: 4]
     let userTasks = tasks;
     if (!isAdmin) {
       const myBusinessIds = businesses.filter(b => b.workerId === currentUser?.name).map(b => b.id);
       userTasks = tasks.filter(t => myBusinessIds.includes(t.businessId));
     }
 
-    // 2. Aplicar el filtro de la barra superior (Select)
     if (filterBusiness === 'all') {
       return userTasks;
     }

@@ -6,6 +6,7 @@ import DashboardOverview from './features/dashboard/DashboardOverview';
 import BusinessGrid from './features/businesses/components/BusinessGrid';
 import CalendarView from './features/tasks/CalendarView';
 import AdminView from './features/admin/components/AdminView';
+import ClientView from './features/client/ClientView';
 
 function App() {
   const { currentUser, getFilteredBusinesses } = useContext(AgencyContext);
@@ -16,6 +17,11 @@ function App() {
     return <LoginView />;
   }
 
+  // Redirección directa al Portal del Cliente según su rol
+  if (currentUser.role === 'client') {
+    return <ClientView />;
+  }
+  
   // Renderizado condicional de las pestañas internas de la aplicación
   const renderContent = () => {
     switch (activeTab) {
