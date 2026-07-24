@@ -10,7 +10,7 @@ La aplicación ha sido migrada con éxito de una arquitectura de persistencia vo
 
 ---
 
-###  Nuevas Funcionalidades: Portal de Cliente y Sistema de Sugerencias
+##  Nuevas Funcionalidades: Portal de Cliente y Sistema de Sugerencias
 
 Se implementó el flujo completo para el rol de **Cliente (`client`)**, permitiendo un acceso restringido, personalizado y seguro a la plataforma, junto con un canal de comunicación directo entre el cliente y el equipo de trabajo.
 
@@ -61,36 +61,39 @@ El proyecto se encuentra estructurado de forma modular para mitigar el acoplamie
 A continuación se detalla el propósito y la responsabilidad de cada directorio principal:
 
 ### Núcleo y Estado Global (`src/`)
-* **`components/ui/`**: Centraliza los componentes atómicos y reutilizables de la interfaz de usuario que carecen de lógica de negocio directa (por ejemplo, `CustomModal.jsx`).
-* **`context/`**: Contiene el punto de control del estado global de la aplicación (`AgencyContext.jsx`). Distribuye la información de autenticación, la sesión del usuario y las mutaciones de datos a través de la API Context de React.
-* **`layouts/`**: Define los componentes estructurales o esquemas visuales compartidos de la interfaz. El archivo `MainLayout.jsx` gestiona la barra de navegación lateral fija y el contenedor dinámico principal.
-* **`services/`**: Capa dedicada exclusivamente a la abstracción de la persistencia de datos y utilidades de almacenamiento independiente de la interfaz gráfica (`businessService.js`, `firebase.js`, `taskService.js`).
-
+* **`components/ui/`**: Centraliza los componentes atómicos y reutilizables de la interfaz gráfica (`CustomModal.jsx`).
+* **`context/`**: Contiene el punto de control del estado global de la aplicación (`AgencyContext.jsx`). Distribuye la sesión activa, empresas, tareas y sugerencias.
+* **`layouts/`**: Define los esquemas visuales compartidos. `MainLayout.jsx` gestiona la navegación lateral y el contenedor principal.
+* **`services/`**: Capa de abstracción y persistencia asíncrona con Firebase Firestore (`businessService.js`, `firebase.js`, `taskService.js`, `suggestionService.js`).
 ---
 
 ### Módulos por Características (`src/features/`)
 
-Cada directorio representa un dominio o funcionalidad de negocio específica y cuenta con sus propios componentes aislados:
+Cada directorio en `features/` representa un dominio de negocio aislado con sus propios componentes y hooks:
 
-#### 1. `businesses/` (Módulo de Negocios)
-* **Propósito**: Gestión y visualización de las empresas o cuentas de clientes que pertenecen a la agencia.
-* **Componente clave**: `BusinessGrid.jsx` (Renderiza los negocios asignados en formato de cuadrícula detallando el trabajador encargado).
+#### 1. `admin/` (Módulo de Administración)
+* **Propósito**: Gestión global y administración restringida de la agencia.
+* **Componentes clave**: `AdminView.jsx`, `BusinessForm.jsx` (Alta de clientes) y `TaskForm.jsx` (Asignación de tareas).
 
-#### 2. `dashboard/` (Módulo del Panel Principal)
-* **Propósito**: Consolidación y presentación de las métricas diarias del sistema, las tareas internas del administrador y el flujo operativo general.
-* **Componente clave**: `WorkerWorkflow.jsx` (Despliega un sistema de acordeones dinámicos por unidad de negocio e incluye una barra de progreso que calcula el porcentaje de tareas completadas en tiempo real).
+#### 2. `auth/` (Módulo de Autenticación)
+* **Propósito**: Control de acceso seguro, gestión de sesión y roles.
+* **Componentes y Hooks**: `LoginView.jsx` y `useAuth.js` (Custom hook para abstraer la lógica de inicio de sesión).
 
-#### 3. `tasks/` (Módulo de Calendario)
-* **Propósito**: Organización temporal de los entregables y actividades operativas en función de sus fechas límite de entrega.
-* **Componente clave**: `CalendarView.jsx` (Orquesta la cuadrícula del calendario mensual abstrayendo la lógica en subcomponentes especializados).
+#### 3. `businesses/` (Módulo de Negocios)
+* **Propósito**: Visualización y gestión del catálogo de clientes de la agencia.
+* **Componentes clave**: `BusinessGrid.jsx` (Cuadrícula de empresas con modal de eliminación en cascada).
 
-#### 4. `admin/` (Módulo de Administración)
-* **Propósito**: Proveer herramientas y vistas exclusivas para usuarios con privilegios de administrador.
-* **Componente clave**: `BusinessForm.jsx` y `TaskForm.jsx` (Formularios restringidos para la creación de clientes y asignación de actividades).
+#### 4. `client/` (Módulo del Portal de Cliente)
+* **Propósito**: Experiencia dedicada y restringida para el rol de cliente.
+* **Componentes clave**: `ClientView.jsx` (Vista general de marca) y `SuggestionBox.jsx` (Caja de envío de sugerencias en tiempo real).
 
-#### 5. `auth/` (Módulo de Autenticación)
-* **Propósito**: Administrar el control de acceso seguro a la plataforma y gestionar el ciclo de vida de la sesión activa del usuario.
-* **Componente clave**: `LoginView.jsx` (Formulario de inicio de sesión vinculado directamente al contexto de autenticación global).
+#### 5. `dashboard/` (Módulo de Métricas y Flujo Operativo)
+* **Propósito**: Consolidación de indicadores, tareas del día a día y supervisión general.
+* **Componentes clave**: `DashboardOverview.jsx`, `MetricCards.jsx`, `WorkerWorkflow.jsx` (Acordeón de avance por empresa), `AdminInternalTasks.jsx` y `SuggestionsWidget.jsx` (Buzón de sugerencias recibidas).
+
+#### 6. `tasks/` (Módulo de Calendario y Entregables)
+* **Propósito**: Organización temporal y control de estados de las actividades programadas.
+* **Componentes clave**: `CalendarView.jsx`, `CalendarHeader.jsx` y `CalendarGrid.jsx` (Cuadrícula mensual/semanal reactiva).
 
 ---
 
