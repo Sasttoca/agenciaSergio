@@ -9,7 +9,19 @@ export const AgencyProvider = ({ children }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
-  const today = "2026-06-28";
+  // Calculamos dinámicamente el día de HOY en formato YYYY-MM-DD (hora local)
+  const getTodayFormatted = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const today = getTodayFormatted();
+
+// Asegúrate de incluir 'today' dentro del Provider value:
+// <AgencyContext.Provider value={{ ..., today }}>
 
   // Inicializamos los estados vacíos sin ningún dato quemado por defecto
   const [businesses, setBusinesses] = useState([]);

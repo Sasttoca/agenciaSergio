@@ -11,7 +11,7 @@ const AdminInternalTasks = ({ tasks, onToggleStatus }) => {
       </h3>
       
       {adminTasks.length === 0 ? (
-        <p className="text-slate-500 text-sm py-2">No hay tareas internas asignadas hoy.</p>
+        <p className="text-slate-500 text-sm py-2">No hay tareas internas asignadas para hoy.</p>
       ) : (
         <div className="space-y-3">
           {adminTasks.map(task => (

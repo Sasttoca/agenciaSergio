@@ -12,7 +12,8 @@ const CalendarView = () => {
     today 
   } = useContext(AgencyContext);
 
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 5, 23)); // Inicializado en Junio 2026 basado en el sistema
+  // Usamos new Date() para obtener automáticamente la fecha real actual
+  const [currentDate, setCurrentDate] = useState(new Date()); 
   const [viewMode, setViewMode] = useState('monthly');
   const [filterBusiness, setFilterBusiness] = useState('all');
 
@@ -48,7 +49,7 @@ const CalendarView = () => {
       return tasks.filter(t => t.businessId === currentUser.businessId);
     }
 
-    // 2. Lógica para Admin y Worker (preexistente)[cite: 4]
+    // 2. Lógica para Admin y Worker
     let userTasks = tasks;
     if (!isAdmin) {
       const myBusinessIds = businesses.filter(b => b.workerId === currentUser?.name).map(b => b.id);

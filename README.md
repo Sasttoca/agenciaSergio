@@ -10,7 +10,7 @@ La aplicación ha sido migrada con éxito de una arquitectura de persistencia vo
 
 ---
 
-## 🚀 Nuevas Funcionalidades: Portal de Cliente y Sistema de Sugerencias
+###  Nuevas Funcionalidades: Portal de Cliente y Sistema de Sugerencias
 
 Se implementó el flujo completo para el rol de **Cliente (`client`)**, permitiendo un acceso restringido, personalizado y seguro a la plataforma, junto con un canal de comunicación directo entre el cliente y el equipo de trabajo.
 
