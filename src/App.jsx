@@ -25,13 +25,13 @@ function App() {
   // Renderizado condicional de las pestañas internas de la aplicación
   const renderContent = () => {
     switch (activeTab) {
-      case 'dashboard':
+      case 'Dashboard':
         return <DashboardOverview />;
-      case 'businesses':
+      case 'Empresas':
         return <BusinessGrid businesses={getFilteredBusinesses()} />;
-      case 'tasks':
+      case 'Tareas':
         return <CalendarView />;
-      case 'admin':
+      case 'Administracion':
         return <AdminView />;
       default:
         return <DashboardOverview />;
