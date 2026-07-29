@@ -1,15 +1,19 @@
 import React from 'react';
 
-const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus }) => {
+const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus, onSelectDayTasks }) => {
+  
+  // 1. Obtiene el total de días del mes actual
   const getDaysInMonth = (date) => {
     return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
   };
 
+  // 2. Determina el primer día de la semana del mes (Lunes = 0, Domingo = 6)
   const getFirstDayOfWeek = (date) => {
     let day = new Date(date.getFullYear(), date.getMonth(), 1).getDay();
     return day === 0 ? 6 : day - 1;
   };
 
+  // 3. Formatea un número de día a YYYY-MM-DD
   const formatDayString = (dayNum) => {
     const year = currentDate.getFullYear();
     const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
@@ -17,6 +21,7 @@ const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus }) =
     return `${year}-${month}-${day}`;
   };
 
+  // 4. Calcula la lista de 7 días para la vista semanal
   const getWeekDays = () => {
     const currentDay = currentDate.getDay();
     const distanceToMonday = currentDay === 0 ? -6 : 1 - currentDay;
@@ -32,6 +37,7 @@ const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus }) =
 
   const daysOfWeek = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
+  // VISTA MENSUAL
   if (viewMode === 'monthly') {
     const totalDays = getDaysInMonth(currentDate);
     const blankDays = getFirstDayOfWeek(currentDate);
@@ -44,6 +50,7 @@ const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus }) =
           </div>
         ))}
 
+        {/* Días vacíos previos */}
         {Array.from({ length: blankDays }).map((_, i) => (
           <div 
             key={`blank-${i}`} 
@@ -51,15 +58,25 @@ const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus }) =
           ></div>
         ))}
 
+        {/* Días del mes */}
         {Array.from({ length: totalDays }, (_, i) => i + 1).map(day => {
           const dateStr = formatDayString(day);
           const dayTasks = tasks.filter(t => t.dueDate === dateStr);
           const isToday = dateStr === today;
+          const hasTasks = dayTasks.length > 0;
 
           return (
             <div 
               key={day} 
-              className={`h-24 border rounded-xl p-2 flex flex-col justify-between overflow-y-auto bg-[#060814] scrollbar-thin transition-colors hover:bg-slate-800/20 ${
+              // Abre el modal si el día tiene tareas
+              onClick={() => {
+                if (hasTasks && onSelectDayTasks) {
+                  onSelectDayTasks(dateStr, dayTasks);
+                }
+              }}
+              className={`h-24 border rounded-xl p-2 flex flex-col justify-between overflow-y-auto bg-[#060814] scrollbar-thin transition-colors ${
+                hasTasks ? 'cursor-pointer hover:bg-slate-800/40 hover:border-slate-700' : 'hover:bg-slate-800/10'
+              } ${
                 isToday ? 'border-indigo-500 ring-1 ring-indigo-500/20' : 'border-slate-800/80'
               }`}
             >
@@ -77,17 +94,16 @@ const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus }) =
                 {dayTasks.map(task => {
                   const isCompleted = task.status === 'Realizada';
                   return (
-                    <button
+                    <div
                       key={task.id}
-                      onClick={() => onToggleStatus && onToggleStatus(task.id)}
-                      className={`w-full text-left text-[9px] p-1 rounded truncate block transition-all hover:scale-[0.98] ${
+                      className={`w-full text-left text-[9px] p-1 rounded truncate block transition-all ${
                         isCompleted 
                           ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/30 line-through' 
                           : 'bg-amber-950/40 text-amber-400 border border-amber-900/30'
                       }`}
                     >
                       {task.title}
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -98,19 +114,33 @@ const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus }) =
     );
   }
 
+  // VISTA SEMANAL
   const weekDays = getWeekDays();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
       {weekDays.map((dayDate) => {
-        const formattedDateStr = dayDate.toISOString().split('T')[0];
+        const year = dayDate.getFullYear();
+        const month = (dayDate.getMonth() + 1).toString().padStart(2, '0');
+        const day = dayDate.getDate().toString().padStart(2, '0');
+        const formattedDateStr = `${year}-${month}-${day}`;
+
         const dayTasks = tasks.filter(t => t.dueDate === formattedDateStr);
         const isToday = formattedDateStr === today;
+        const hasTasks = dayTasks.length > 0;
 
         return (
           <div 
             key={formattedDateStr}
-            className={`bg-[#060814] p-4 rounded-2xl border min-h-[300px] flex flex-col ${
+            // Abre el modal si el día tiene tareas en vista semanal
+            onClick={() => {
+              if (hasTasks && onSelectDayTasks) {
+                onSelectDayTasks(formattedDateStr, dayTasks);
+              }
+            }}
+            className={`bg-[#060814] p-4 rounded-2xl border min-h-[300px] flex flex-col transition-colors ${
+              hasTasks ? 'cursor-pointer hover:border-slate-700' : ''
+            } ${
               isToday ? 'border-indigo-500 ring-1 ring-indigo-500/20' : 'border-slate-800/80'
             }`}
           >
@@ -132,8 +162,7 @@ const CalendarGrid = ({ currentDate, viewMode, tasks, today, onToggleStatus }) =
                   return (
                     <div 
                       key={task.id}
-                      onClick={() => onToggleStatus && onToggleStatus(task.id)}
-                      className={`p-2.5 rounded-xl border text-xs cursor-pointer select-none transition-all hover:border-slate-700 active:scale-95 ${
+                      className={`p-2.5 rounded-xl border text-xs select-none transition-all ${
                         isCompleted 
                           ? 'bg-emerald-950/20 border-emerald-900/20 text-emerald-500/70 line-through' 
                           : 'bg-[#0B132B] border-slate-800 text-slate-200'
