@@ -16,28 +16,33 @@ Se implementó el flujo completo para el rol de **Cliente (`client`)**, permitie
 
 ---
 
-### 🎨 1. Vista del Cliente (`ClientView.jsx`)
+###  1. Modal Emergente de Tareas Diarias (`CalendarView.jsx` & `CalendarGrid.jsx`)
+* **Visualización Responsiva:** Despliega una ventana emergente (`modal`) al interactuar con días que contienen entregables, mostrando títulos completos, notas y estado en móvil y PC.
+* **Apertura Condicional:** Se activa exclusivamente si el día seleccionado posee actividades asignadas (`dayTasks.length > 0`), evitando ventanas emergentes en días vacíos.
+* **Control de Permisos por Rol:** Permite a usuarios `admin` y `worker` cambiar el estado de las tareas desde el modal en tiempo real, mientras mantiene al rol `client` en modo solo lectura.
+
+###  2. Vista del Cliente (`ClientView.jsx`)
 * **Acceso Condicional:** Redirección automática desde `App.jsx` al detectar que el usuario autenticado tiene el rol `client`.
 * **Información de la Marca:** Muestra una tarjeta personalizada con los datos principales de la empresa (Nombre, Sector/Industria y Gestor Operativo asignado).
 * **Calendario Filtrado:** Integración del componente `CalendarView` restringiendo la visibilidad de tareas exclusivamente a aquellas vinculadas al `businessId` de la empresa del cliente.
 
 ---
 
-### 💬 2. Caja de Comentarios y Sugerencias (`SuggestionBox.jsx`)
+###  3. Caja de Comentarios y Sugerencias (`SuggestionBox.jsx`)
 * **Envío en Tiempo Real:** Permite a los clientes enviar observaciones y comentarios directamente desde su portal.
 * **Persistencia en Firestore:** Integración con la colección `suggestions` en la base de datos, almacenando los atributos: `id`, `businessId`, `author`, `text` y `date`.
 
 ---
 
-### 📊 3. Gestión de Sugerencias para el Equipo (`SuggestionsWidget.jsx`)
+###  4. Gestión de Sugerencias para el Equipo (`SuggestionsWidget.jsx`)
 * **Control de Permisos por Rol:**
-  * **Gestor / Worker:** Visualiza únicamente las sugerencias enviadas por los clientes de sus empresas asignadas.
-  * **Administrador:** Acceso completo al historial global de sugerencias de todas las marcas.
+* **Gestor / Worker:** Visualiza únicamente las sugerencias enviadas por los clientes de sus empresas asignadas.
+* **Administrador:** Acceso completo al historial global de sugerencias de todas las marcas.
 * **Gestión del Histórico:** Función exclusiva para el `admin` que permite reiniciar/limpiar el buzón de sugerencias acumuladas.
 
 ---
 
-### Cambios Clave en la Arquitectura:
+###  5. Cambios Clave en la Arquitectura:
 * **Persistencia en la Nube:** Integración de **Cloud Firestore** para almacenar las colecciones de clientes (`businesses`) y actividades (`tasks`).
 * **Servicios Asíncronos:** La capa `services/` ahora consume directamente la SDK de Firebase de manera asíncrona, desacoplando por completo la lógica de consulta y mutación de datos de la interfaz de usuario.
 * **Contexto Reactivo Real:** El archivo `AgencyContext.jsx` fue reescrito para sincronizar el estado global de React con los documentos de Firestore mediante llamadas asíncronas e inicialización de estados vacíos (sin datos quemados o por defecto).

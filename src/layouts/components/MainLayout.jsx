@@ -7,9 +7,9 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, roles: ['admin', 'worker'] },
-    { id: 'businesses', label: 'Negocios', icon: <Briefcase size={18} />, roles: ['admin', 'worker'] },
-    { id: 'tasks', label: 'Calendario', icon: <Calendar size={18} />, roles: ['admin', 'worker'] },
-    { id: 'admin', label: 'Administración', icon: <ShieldAlert size={18} />, roles: ['admin'] }
+    { id: 'Empresas', label: 'Negocios', icon: <Briefcase size={18} />, roles: ['admin', 'worker'] },
+    { id: 'Tareas', label: 'Calendario', icon: <Calendar size={18} />, roles: ['admin', 'worker'] },
+    { id: 'Administracion', label: 'Administración', icon: <ShieldAlert size={18} />, roles: ['admin'] }
   ];
 
   const filteredMenu = menuItems.filter(item => item.roles.includes(currentUser?.role));
