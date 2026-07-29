@@ -16,7 +16,7 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
 
   return (
     <div className="flex h-screen bg-[#060814] text-slate-100 overflow-hidden">
-      {/* SIDEBAR LATERAL */}
+      {/* SIDEBAR LATERAL (DESKTOP) */}
       <aside className="w-64 bg-[#0B132B] border-r border-slate-800/80 flex flex-col justify-between hidden md:flex">
         <div>
           {/* Logo Agencia */}
@@ -30,7 +30,7 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
             </div>
           </div>
 
-          {/* Menú de Navegación */}
+          {/* Menú de Navegación Lateral */}
           <nav className="p-4 space-y-1.5">
             {filteredMenu.map(item => (
               <button
@@ -62,9 +62,9 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
       </aside>
 
       {/* CONTENEDOR PRINCIPAL */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* HEADER SUPERIOR */}
-        <header className="h-16 bg-[#0B132B] border-b border-slate-800/80 px-6 flex items-center justify-between">
+        <header className="h-16 bg-[#0B132B] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0">
           {/* Título de la sección actual en Móvil */}
           <div className="md:hidden flex items-center gap-2">
             <span className="text-lg font-bold text-white capitalize">{activeTab}</span>
@@ -85,13 +85,13 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
           </div>
         </header>
 
-        {/* CONTENIDO INTERNO DINÁMICO */}
-        <main className="flex-1 overflow-y-auto scrollbar-thin">
+        {/* CONTENIDO INTERNO DINÁMICO (pb-20 evita que la barra tape los últimos elementos) */}
+        <main className="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-0">
           {children}
         </main>
 
-        {/* NAV INFERIOR PARA MÓVILES */}
-        <div className="md:hidden bg-[#0B132B] border-t border-slate-800/80 h-16 flex items-center justify-around px-2">
+        {/* NAV INFERIOR FLOTANTE Y FIJO PARA MÓVILES */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B132B]/95 backdrop-blur-md border-t border-slate-800/80 h-16 flex items-center justify-around px-2 shadow-lg">
           {filteredMenu.map(item => (
             <button
               key={item.id}
