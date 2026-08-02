@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 import { businessService } from '../services/businessService';
 import { taskService } from '../services/taskService';
 import { suggestionService } from '../services/suggestionService';
+import { authService } from '../services/authService';
 
 export const AgencyContext = createContext();
 
@@ -9,7 +10,10 @@ export const AgencyProvider = ({ children }) => {
   const [suggestions, setSuggestions] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
-  // Calculamos dinámicamente el día de HOY en formato YYYY-MM-DD (hora local)
+  const [businesses, setBusinesses] = useState([]);
+  const [tasks, setTasks] = useState([]);
+
+  // Calculamos Dinámicamente El Día De Hoy En Formato YYYY-MM-DD (Hora Local)
   const getTodayFormatted = () => {
     const now = new Date();
     const year = now.getFullYear();
@@ -20,14 +24,7 @@ export const AgencyProvider = ({ children }) => {
 
   const today = getTodayFormatted();
 
-// Asegúrate de incluir 'today' dentro del Provider value:
-// <AgencyContext.Provider value={{ ..., today }}>
-
-  // Inicializamos los estados vacíos sin ningún dato quemado por defecto
-  const [businesses, setBusinesses] = useState([]);
-  const [tasks, setTasks] = useState([]);
-
-  // 1. CARGA DE DATOS ASÍNCRONA DESDE FIRESTORE
+  // 1. Carga De Datos Asíncrona Desde Firestore
   useEffect(() => {
     const fetchData = async () => {
       const loadedBusinesses = await businessService.loadBusinesses();
@@ -40,30 +37,25 @@ export const AgencyProvider = ({ children }) => {
     fetchData();
   }, []);
 
-  // Autenticación mockeada en memoria
-  const login = (user, pass) => {
-    if (pass === '123') {
-      const lowerUser = user.toLowerCase();
-      if (lowerUser === 'admin') { setCurrentUser({ name: 'Sergio Admin', role: 'admin' }); return { success: true }; }
-      else if (lowerUser === 'ana') { setCurrentUser({ name: 'Ana Developer', role: 'worker' }); return { success: true }; }
-      else if (lowerUser === 'carlos') { setCurrentUser({ name: 'Carlos Media', role: 'worker' }); return { success: true }; }
-      else if (lowerUser === 'cliente') { 
-        // Asocia un ID de negocio existente
+  // 1.1. Autenticación Asíncrona Desde Firestore
+  const login = async (user, pass) => {
+    const result = await authService.login(user, pass);
+    if (result.success) {
+      // Si El Usuario Es Un Cliente Y No Tiene Un BusinessId Explícito En Su Documento De Firestore, Le Asociamos El Primero
+      if (result.user.role === 'client' && !result.user.businessId) {
         const firstBusinessId = businesses[0]?.id || 'client-business-id';
-        setCurrentUser({ name: 'Cliente Marca', role: 'client', businessId: firstBusinessId }); 
-        return { success: true };
-      }  
-      else return { success: false, message: 'Usuario no encontrado' };
-    } else {
-      return { success: false, message: 'Contraseña incorrecta' };
+        result.user.businessId = firstBusinessId;
+      }
+      setCurrentUser(result.user);
     }
+    return result;
   };
 
   const logout = () => {
     setCurrentUser(null);
   };
 
-  // Filtros reactivos basados en el estado en memoria
+  // Filtros Reactivos Basados En El Estado En Memoria
   const getFilteredBusinesses = () => {
     if (!currentUser) return [];
     return currentUser.role === 'admin' 
@@ -82,7 +74,7 @@ export const AgencyProvider = ({ children }) => {
     setExpandedBusinesses(prev => ({ ...prev, [businessId]: prev[businessId] === false }));
   };
 
-  // 2. MODIFICAR ESTADO DE TAREA EN LA NUBE
+  // 2. Modificar Estado De Tarea En La Nube
   const toggleTaskStatus = async (taskId) => {
     const taskToUpdate = tasks.find(t => t.id === taskId);
     if (!taskToUpdate) return;
@@ -93,53 +85,53 @@ export const AgencyProvider = ({ children }) => {
     setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
-  // 3. AGREGAR NEGOCIO TOTALMENTE VACÍO EN FIRESTORE
+  // 3. Agregar Negocio Totalmente Vacío En Firestore
   const addBusiness = async (name, industry, workerId) => {
-    // Registramos únicamente la empresa y obtenemos el ID real generado por Firebase
+    // Registramos Únicamente La Empresa Y Obtenemos El ID Real Generado Por Firebase
     const newBusiness = await businessService.addBusiness({ name, industry, workerId });
     setBusinesses(prev => [...prev, newBusiness]);
   };
 
-  // 3.1. ELIMINAR NEGOCIO Y SUS TAREAS ASOCIADAS (ELIMINACIÓN EN CASCADA)
+  // 3.1. Eliminar Negocio Y Sus Tareas Asociadas (Eliminación En Cascada)
   const deleteBusiness = async (businessId) => {
     try {
-      // A. Identificamos todas las tareas asociadas al negocio
+      // A. Identificamos Todas Las Tareas Asociadas Al Negocio
       const tasksToDelete = tasks.filter(t => t.businessId === businessId);
 
-      // B. Las eliminamos de Firestore en paralelo
+      // B. Las Eliminamos De Firestore En Paralelo
       const deletePromises = tasksToDelete.map(t => taskService.deleteTask(t.id));
       await Promise.all(deletePromises);
 
-      // C. Eliminamos el negocio de Firestore
+      // C. Eliminamos El Negocio De Firestore
       await businessService.deleteBusiness(businessId);
 
-      // D. Actualizamos el estado local de React filtrando lo eliminado
+      // D. Actualizamos El Estado Local De React Filtrando Lo Eliminado
       setBusinesses(prev => prev.filter(b => b.id !== businessId));
       setTasks(prev => prev.filter(t => t.businessId !== businessId));
     } catch (error) {
-      console.error("Error al procesar la eliminación en cascada: ", error);
+      console.error("Error Al Procesar La Eliminación En Cascada: ", error);
     }
   };
 
-  // 4. CREAR TAREA MANUAL EN FIRESTORE
+  // 4. Crear Tarea Manual En Firestore
   const addTask = async (title, businessId, dueDate, notes) => {
     const newTask = await taskService.addTask({ title, businessId, dueDate, notes, status: 'Pendiente' });
     setTasks(prev => [...prev, newTask]);
   };
 
-  // 5. EDITAR TAREA EN FIRESTORE
+  // 5. Editar Tarea En Firestore
   const editTask = async (taskId, updatedTitle, updatedNotes) => {
     await taskService.updateTask(taskId, { title: updatedTitle, notes: updatedNotes });
     setTasks(tasks.map(t => t.id === taskId ? { ...t, title: updatedTitle, notes: updatedNotes } : t));
   };
 
-  // 6. ELIMINAR TAREA EN FIRESTORE
+  // 6. Eliminar Tarea En Firestore
   const deleteTask = async (taskId) => {
     await taskService.deleteTask(taskId);
     setTasks(tasks.filter(t => t.id !== taskId));
   };
 
-  // Función para agregar una sugerencia
+  // 7. Función Para Agregar Una Sugerencia
   const addSuggestion = async (text) => {
     if (!currentUser || currentUser.role !== 'client') return;
     const newSugg = await suggestionService.addSuggestion({
@@ -150,12 +142,11 @@ export const AgencyProvider = ({ children }) => {
     setSuggestions(prev => [newSugg, ...prev]);
   };
 
-  // Función para reiniciar el histórico de sugerencias
+  // 8. Función Para Reiniciar El Histórico De Sugerencias
   const clearSuggestions = async () => {
     await suggestionService.clearSuggestions(suggestions);
     setSuggestions([]);
   };
-  
 
   return (
     <AgencyContext.Provider value={{
@@ -172,7 +163,7 @@ export const AgencyProvider = ({ children }) => {
       toggleBusinessExpansion,
       toggleTaskStatus,
       addBusiness,
-      deleteBusiness, // <-- Pasamos el método para consumirlo en la UI
+      deleteBusiness, // <-- Pasamos El Método Para Consumirlo En La UI
       addSuggestion,
       clearSuggestions,
       addTask,

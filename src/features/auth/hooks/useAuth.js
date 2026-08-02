@@ -1,15 +1,17 @@
 import { useContext } from 'react';
 import { AgencyContext } from '../../../context/AgencyContext';
 
+// Hook Personalizado Para Simplificar El Acceso A La Autenticación Y Roles
 const useAuth = () => {
-  const { currentUser, handleLogin, handleLogout } = useContext(AgencyContext);
+  const { currentUser, login, logout } = useContext(AgencyContext);
 
   return {
     user: currentUser,
     isAdmin: currentUser?.role === 'admin',
     isWorker: currentUser?.role === 'worker',
-    login: handleLogin,
-    logout: handleLogout,
+    isClient: currentUser?.role === 'client',
+    login,
+    logout,
   };
 };
 
