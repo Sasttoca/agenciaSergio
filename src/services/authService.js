@@ -1,5 +1,5 @@
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { doc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from "./firebase";
 
 export const authService = {
   // Inicia Sesión Consultando Directamente El Documento En Firestore
@@ -15,7 +15,6 @@ export const authService = {
 
       const userData = userSnap.data();
 
-      // Validación De Contraseña Almacenada En La Base De Datos
       if (userData.password !== password) {
         return { success: false, message: 'Contraseña Incorrecta' };
       }
@@ -32,6 +31,27 @@ export const authService = {
     } catch (error) {
       console.error('Error Al Verificar Credenciales En Firestore:', error);
       return { success: false, message: 'Error De Conexión Con La Base De Datos' };
+    }
+  },
+
+  // Obtiene La Lista Dinámica De Todos Los Trabajadores (Rol 'worker')
+  getWorkers: async () => {
+    try {
+      const usersRef = collection(db, 'users');
+      const q = query(usersRef, where('role', '==', 'worker'));
+      const querySnapshot = await getDocs(q);
+      
+      const workers = [];
+      querySnapshot.forEach((docSnap) => {
+        workers.push({
+          id: docSnap.id,
+          ...docSnap.data()
+        });
+      });
+      return workers;
+    } catch (error) {
+      console.error('Error Al Cargar Trabajadores:', error);
+      return [];
     }
   }
 };
