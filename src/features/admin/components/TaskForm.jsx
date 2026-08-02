@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
-import { Plus, Calendar, FileText } from 'lucide-react';
-//metodo para crear una nueva tarea mediante un formulario 
-const TaskForm = ({ businesses, onAddTask }) => {
+import React, { useState, useContext } from 'react';
+import { AgencyContext } from '../../../context/AgencyContext';
+import { Plus, FileText } from 'lucide-react';
+
+const TaskForm = () => {
+  // Consumimos Directamente Del Contexto
+  const { businesses, addTask } = useContext(AgencyContext);
+
   const [title, setTitle] = useState('');
   const [businessId, setBusinessId] = useState('admin');
   const [dueDate, setDueDate] = useState('');
@@ -11,9 +15,9 @@ const TaskForm = ({ businesses, onAddTask }) => {
     e.preventDefault();
     if (!title.trim() || !dueDate) return;
 
-    onAddTask(title, businessId, dueDate, notes);
+    addTask(title, businessId, dueDate, notes);
     
-    // Limpiamos todos los campos tras el registro exitoso
+    // Limpiamos Todos Los Campos Tras El Registro Exitoso
     setTitle('');
     setDueDate(''); 
     setNotes('');
@@ -34,31 +38,36 @@ const TaskForm = ({ businesses, onAddTask }) => {
             className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm placeholder:text-slate-600"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            required
           />
         </div>
 
         <div>
-          <label className="text-xs text-slate-400 font-medium block mb-1.5">¿A quien asignara la tarea?</label>
+          <label className="text-xs text-slate-400 font-medium block mb-1.5">¿A quién asignará la tarea?</label>
           <select 
             className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm appearance-none cursor-pointer text-slate-200"
             value={businessId}
             onChange={(e) => setBusinessId(e.target.value)}
           >
             <option value="admin">Administración Interna (Solo Admin)</option>
+            {/* Carga Dinámica De Empresas Y Sus Respectivos Trabajadores Asignados */}
             {businesses.map(b => (
-              <option key={b.id} value={b.id}>{b.name} ({b.workerId})</option>
+              <option key={b.id} value={b.id}>
+                {b.name} ({b.workerId})
+              </option>
             ))}
           </select>
         </div>
 
         <div>
-          <label className="text-xs text-slate-400 font-medium block mb-1.5">día que se realizara la tarea</label>
+          <label className="text-xs text-slate-400 font-medium block mb-1.5">Día que se realizará la tarea</label>
           <div className="relative">
             <input 
               type="date"
               className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm cursor-pointer text-slate-200 scheme-dark" 
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              required
             />
           </div>
         </div>
@@ -74,7 +83,10 @@ const TaskForm = ({ businesses, onAddTask }) => {
           />
         </div>
 
-        <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 text-sm mt-2 shadow-lg shadow-indigo-600/10">
+        <button 
+          type="submit"
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 text-sm mt-2 shadow-lg shadow-indigo-600/10 active:scale-[0.98]"
+        >
           <Plus size={16} /> Crear Tarea
         </button>
       </form>
