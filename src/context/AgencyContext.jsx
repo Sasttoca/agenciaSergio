@@ -12,6 +12,7 @@ export const AgencyProvider = ({ children }) => {
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
   const [businesses, setBusinesses] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [workers, setWorkers] = useState([]); // <-- Estado Para Guardar Los Trabajadores Dinámicos
 
   // Calculamos Dinámicamente El Día De Hoy En Formato YYYY-MM-DD (Hora Local)
   const getTodayFormatted = () => {
@@ -30,9 +31,12 @@ export const AgencyProvider = ({ children }) => {
       const loadedBusinesses = await businessService.loadBusinesses();
       const loadedTasks = await taskService.loadTasks();
       const loadedSuggestions = await suggestionService.loadSuggestions();
+      const loadedWorkers = await authService.getWorkers(); // <-- Carga Dinámica De Trabajadores
+      
       setBusinesses(loadedBusinesses);
       setTasks(loadedTasks);
       setSuggestions(loadedSuggestions);
+      setWorkers(loadedWorkers); // <-- Guardamos Trabajadores En El Estado
     };
     fetchData();
   }, []);
@@ -156,6 +160,7 @@ export const AgencyProvider = ({ children }) => {
       businesses,
       tasks,
       suggestions,
+      workers, // <-- Exportamos Workers Para Los Formularios
       login,
       logout,
       getFilteredBusinesses,
@@ -163,7 +168,7 @@ export const AgencyProvider = ({ children }) => {
       toggleBusinessExpansion,
       toggleTaskStatus,
       addBusiness,
-      deleteBusiness, // <-- Pasamos El Método Para Consumirlo En La UI
+      deleteBusiness,
       addSuggestion,
       clearSuggestions,
       addTask,
