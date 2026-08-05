@@ -7,22 +7,23 @@ import BusinessGrid from './features/businesses/components/BusinessGrid';
 import CalendarView from './features/tasks/CalendarView';
 import AdminView from './features/admin/components/AdminView';
 import ClientView from './features/client/ClientView';
+import UsersView from './features/users/UsersView';
 
 function App() {
   const { currentUser, getFilteredBusinesses } = useContext(AgencyContext);
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('Dashboard');
 
-  // Si no hay usuario autenticado, mostramos la vista de Login directamente
+  // Si No Hay Usuario Autenticado, Mostramos La Vista De Login Directamente
   if (!currentUser) {
     return <LoginView />;
   }
 
-  // Redirección directa al Portal del Cliente según su rol
+  // Redirección Directa Al Portal Del Cliente Según Su Rol
   if (currentUser.role === 'client') {
     return <ClientView />;
   }
   
-  // Renderizado condicional de las pestañas internas de la aplicación
+  // Renderizado Condicional De Las Pestañas Internas De La Aplicación
   const renderContent = () => {
     switch (activeTab) {
       case 'Dashboard':
@@ -31,6 +32,8 @@ function App() {
         return <BusinessGrid businesses={getFilteredBusinesses()} />;
       case 'Tareas':
         return <CalendarView />;
+      case 'Usuarios':
+        return <UsersView />; // <-- Renderizado Del Módulo De Usuarios
       case 'Administracion':
         return <AdminView />;
       default:

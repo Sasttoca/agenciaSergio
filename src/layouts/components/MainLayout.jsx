@@ -1,17 +1,20 @@
 import React, { useContext } from 'react';
 import { AgencyContext } from '../../context/AgencyContext';
-import { LayoutDashboard, Briefcase, Calendar, ShieldAlert, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Calendar, Users, ShieldAlert, LogOut, User } from 'lucide-react';
 
 const MainLayout = ({ activeTab, setActiveTab, children }) => {
   const { currentUser, logout } = useContext(AgencyContext);
 
+  // Opciones Del Menú De Navegación Lateral Y Móvil
   const menuItems = [
     { id: 'Dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, roles: ['admin', 'worker'] },
     { id: 'Empresas', label: 'Negocios', icon: <Briefcase size={18} />, roles: ['admin', 'worker'] },
     { id: 'Tareas', label: 'Calendario', icon: <Calendar size={18} />, roles: ['admin', 'worker'] },
+    { id: 'Usuarios', label: 'Usuarios', icon: <Users size={18} />, roles: ['admin'] },
     { id: 'Administracion', label: 'Administración', icon: <ShieldAlert size={18} />, roles: ['admin'] }
   ];
 
+  // Filtramos Los Elementos Del Menú Según El Rol Del Usuario Actual
   const filteredMenu = menuItems.filter(item => item.roles.includes(currentUser?.role));
 
   return (
@@ -30,7 +33,7 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
             </div>
           </div>
 
-          {/* Menú de Navegación Lateral */}
+          {/* Menú De Navegación Lateral */}
           <nav className="p-4 space-y-1.5">
             {filteredMenu.map(item => (
               <button
@@ -49,7 +52,7 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
           </nav>
         </div>
 
-        {/* Botón de Cerrar Sesión */}
+        {/* Botón De Cerrar Sesión */}
         <div className="p-4 border-t border-slate-800/60">
           <button 
             onClick={logout}
@@ -65,13 +68,13 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
       <div className="flex-1 flex flex-col overflow-hidden relative">
         {/* HEADER SUPERIOR */}
         <header className="h-16 bg-[#0B132B] border-b border-slate-800/80 px-6 flex items-center justify-between shrink-0">
-          {/* Título de la sección actual en Móvil */}
+          {/* Título De La Sección Actual En Móvil */}
           <div className="md:hidden flex items-center gap-2">
             <span className="text-lg font-bold text-white capitalize">{activeTab}</span>
           </div>
           <div className="hidden md:block"></div>
 
-          {/* Perfil del Usuario */}
+          {/* Perfil Del Usuario */}
           <div className="flex items-center gap-3 bg-[#060814] border border-slate-800/80 px-4 py-1.5 rounded-full shadow-sm">
             <div className="w-6 h-6 bg-slate-800 rounded-full flex items-center justify-center text-slate-300">
               <User size={13} />
@@ -85,7 +88,7 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
           </div>
         </header>
 
-        {/* CONTENIDO INTERNO DINÁMICO (pb-20 evita que la barra tape los últimos elementos) */}
+        {/* CONTENIDO INTERNO DINÁMICO */}
         <main className="flex-1 overflow-y-auto scrollbar-thin pb-20 md:pb-0">
           {children}
         </main>
