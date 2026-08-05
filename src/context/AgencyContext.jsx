@@ -3,6 +3,7 @@ import { businessService } from '../services/businessService';
 import { taskService } from '../services/taskService';
 import { suggestionService } from '../services/suggestionService';
 import { authService } from '../services/authService';
+import { userService } from '../services/userService';
 
 export const AgencyContext = createContext();
 
@@ -12,7 +13,8 @@ export const AgencyProvider = ({ children }) => {
   const [expandedBusinesses, setExpandedBusinesses] = useState({});
   const [businesses, setBusinesses] = useState([]);
   const [tasks, setTasks] = useState([]);
-  const [workers, setWorkers] = useState([]); // <-- Estado Para Guardar Los Trabajadores Dinámicos
+  const [workers, setWorkers] = useState([]);
+  const [users, setUsers] = useState([]);
 
   // Calculamos Dinámicamente El Día De Hoy En Formato YYYY-MM-DD (Hora Local)
   const getTodayFormatted = () => {
@@ -31,28 +33,40 @@ export const AgencyProvider = ({ children }) => {
       const loadedBusinesses = await businessService.loadBusinesses();
       const loadedTasks = await taskService.loadTasks();
       const loadedSuggestions = await suggestionService.loadSuggestions();
-      const loadedWorkers = await authService.getWorkers(); // <-- Carga Dinámica De Trabajadores
+      const loadedWorkers = await authService.getWorkers();
+      const loadedUsers = await userService.getUsers();
       
       setBusinesses(loadedBusinesses);
       setTasks(loadedTasks);
       setSuggestions(loadedSuggestions);
-      setWorkers(loadedWorkers); // <-- Guardamos Trabajadores En El Estado
+      setWorkers(loadedWorkers);
+      setUsers(loadedUsers);
     };
     fetchData();
   }, []);
 
-  // 1.1. Autenticación Asíncrona Desde Firestore
+  // 1.1. Autenticación Asíncrona Desde Firestore Con Control Estricto De Suspensión
   const login = async (user, pass) => {
-    const result = await authService.login(user, pass);
-    if (result.success) {
-      // Si El Usuario Es Un Cliente Y No Tiene Un BusinessId Explícito En Su Documento De Firestore, Le Asociamos El Primero
-      if (result.user.role === 'client' && !result.user.businessId) {
-        const firstBusinessId = businesses[0]?.id || 'client-business-id';
-        result.user.businessId = firstBusinessId;
+    try {
+      const result = await authService.login(user, pass);
+
+      if (result && result.success) {
+        // Si El Usuario Es Un Cliente Y No Tiene Un BusinessId Explícito En Su Documento De Firestore, Le Asociamos El Primero
+        if (result.user.role === 'client' && !result.user.businessId) {
+          const firstBusinessId = businesses[0]?.id || 'client-business-id';
+          result.user.businessId = firstBusinessId;
+        }
+        setCurrentUser(result.user);
+      } else {
+        // Reseteamos Sesión Si La Autenticación Falla O La Cuenta Está Suspendida
+        setCurrentUser(null);
       }
-      setCurrentUser(result.user);
+      return result;
+    } catch (error) {
+      console.error("Error al procesar login en el contexto:", error);
+      setCurrentUser(null);
+      return { success: false, message: 'Error al procesar el inicio de sesión.' };
     }
-    return result;
   };
 
   const logout = () => {
@@ -91,7 +105,6 @@ export const AgencyProvider = ({ children }) => {
 
   // 3. Agregar Negocio Totalmente Vacío En Firestore
   const addBusiness = async (name, industry, workerId) => {
-    // Registramos Únicamente La Empresa Y Obtenemos El ID Real Generado Por Firebase
     const newBusiness = await businessService.addBusiness({ name, industry, workerId });
     setBusinesses(prev => [...prev, newBusiness]);
   };
@@ -99,17 +112,13 @@ export const AgencyProvider = ({ children }) => {
   // 3.1. Eliminar Negocio Y Sus Tareas Asociadas (Eliminación En Cascada)
   const deleteBusiness = async (businessId) => {
     try {
-      // A. Identificamos Todas Las Tareas Asociadas Al Negocio
       const tasksToDelete = tasks.filter(t => t.businessId === businessId);
 
-      // B. Las Eliminamos De Firestore En Paralelo
       const deletePromises = tasksToDelete.map(t => taskService.deleteTask(t.id));
       await Promise.all(deletePromises);
 
-      // C. Eliminamos El Negocio De Firestore
       await businessService.deleteBusiness(businessId);
 
-      // D. Actualizamos El Estado Local De React Filtrando Lo Eliminado
       setBusinesses(prev => prev.filter(b => b.id !== businessId));
       setTasks(prev => prev.filter(t => t.businessId !== businessId));
     } catch (error) {
@@ -152,6 +161,42 @@ export const AgencyProvider = ({ children }) => {
     setSuggestions([]);
   };
 
+  // 9. Registrar Nuevo Usuario En Firestore
+  const addUser = async (userData) => {
+    const newUser = await userService.createUser(userData);
+    setUsers(prev => [...prev, newUser]);
+    if (newUser.role === 'worker') {
+      setWorkers(prev => [...prev, newUser]);
+    }
+  };
+
+  // 10. Editar Credenciales O Rol De Usuario En Firestore
+  const updateUser = async (userId, updatedFields) => {
+    await userService.updateUser(userId, updatedFields);
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updatedFields } : u));
+    if (updatedFields.name || updatedFields.role) {
+      setWorkers(prev => prev.map(w => w.id === userId ? { ...w, ...updatedFields } : w));
+    }
+  };
+
+  // 11. Alternar Estado De Suspensión De Usuario En Firestore
+  const toggleSuspendUser = async (userId, currentStatus) => {
+    const newStatus = await userService.toggleSuspendUser(userId, currentStatus);
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, isSuspended: newStatus } : u));
+
+    // Si El Usuario Que Fue Suspendido Es El Misma Que Tiene La Sesión Iniciada, Se Le Cierra Sesión De Inmediato
+    if (currentUser && currentUser.id === userId && newStatus) {
+      setCurrentUser(null);
+    }
+  };
+
+  // 12. Eliminar Usuario En Firestore
+  const deleteUser = async (userId) => {
+    await userService.deleteUser(userId);
+    setUsers(prev => prev.filter(u => u.id !== userId));
+    setWorkers(prev => prev.filter(w => w.id !== userId));
+  };
+
   return (
     <AgencyContext.Provider value={{
       currentUser,
@@ -160,7 +205,8 @@ export const AgencyProvider = ({ children }) => {
       businesses,
       tasks,
       suggestions,
-      workers, // <-- Exportamos Workers Para Los Formularios
+      workers,
+      users,
       login,
       logout,
       getFilteredBusinesses,
@@ -173,7 +219,11 @@ export const AgencyProvider = ({ children }) => {
       clearSuggestions,
       addTask,
       deleteTask,
-      editTask
+      editTask,
+      addUser,
+      updateUser,
+      toggleSuspendUser,
+      deleteUser
     }}>
       {children}
     </AgencyContext.Provider>
