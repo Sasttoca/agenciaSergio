@@ -40,10 +40,13 @@ export const AgencyProvider = ({ children }) => {
       const deletedIds = await taskService.cleanOldTasks(loadedTasks);
       const activeTasks = loadedTasks.filter(t => !deletedIds.includes(t.id));
 
+      // Garantizamos que 'workers' contenga estrictamente usuarios con rol 'worker'
+      const onlyWorkers = loadedWorkers.filter(w => w.role === 'worker');
+
       setBusinesses(loadedBusinesses);
       setTasks(activeTasks);
       setSuggestions(loadedSuggestions);
-      setWorkers(loadedWorkers);
+      setWorkers(onlyWorkers);
       setUsers(loadedUsers);
     };
     fetchData();
@@ -55,14 +58,12 @@ export const AgencyProvider = ({ children }) => {
       const result = await authService.login(user, pass);
 
       if (result && result.success) {
-        // Si El Usuario Es Un Cliente Y No Tiene Un BusinessId Explícito En Su Documento De Firestore, Le Asociamos El Primero
         if (result.user.role === 'client' && !result.user.businessId) {
           const firstBusinessId = businesses[0]?.id || 'client-business-id';
           result.user.businessId = firstBusinessId;
         }
         setCurrentUser(result.user);
       } else {
-        // Reseteamos Sesión Si La Autenticación Falla O La Cuenta Está Suspendida
         setCurrentUser(null);
       }
       return result;
@@ -177,10 +178,24 @@ export const AgencyProvider = ({ children }) => {
   // 10. Editar Credenciales O Rol De Usuario En Firestore
   const updateUser = async (userId, updatedFields) => {
     await userService.updateUser(userId, updatedFields);
+    
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updatedFields } : u));
-    if (updatedFields.name || updatedFields.role) {
-      setWorkers(prev => prev.map(w => w.id === userId ? { ...w, ...updatedFields } : w));
-    }
+
+    // Sincronización reactiva del estado 'workers' según el rol actualizado
+    setWorkers(prev => {
+      const userExists = prev.some(w => w.id === userId);
+      const updatedUser = { ...prev.find(w => w.id === userId), ...updatedFields };
+
+      if (updatedFields.role) {
+        if (updatedFields.role === 'worker') {
+          return userExists ? prev.map(w => w.id === userId ? updatedUser : w) : [...prev, updatedUser];
+        } else {
+          return prev.filter(w => w.id !== userId);
+        }
+      }
+
+      return prev.map(w => w.id === userId ? { ...w, ...updatedFields } : w);
+    });
   };
 
   // 11. Alternar Estado De Suspensión De Usuario En Firestore
@@ -188,7 +203,6 @@ export const AgencyProvider = ({ children }) => {
     const newStatus = await userService.toggleSuspendUser(userId, currentStatus);
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, isSuspended: newStatus } : u));
 
-    // Si El Usuario Que Fue Suspendido Es El Misma Que Tiene La Sesión Iniciada, Se Le Cierra Sesión De Inmediato
     if (currentUser && currentUser.id === userId && newStatus) {
       setCurrentUser(null);
     }
