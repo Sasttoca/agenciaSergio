@@ -1,9 +1,9 @@
 import React, { useState, useContext } from 'react';
 import { AgencyContext } from '../../../context/AgencyContext';
-import { Users, Shield, Edit2, Ban, CheckCircle, Trash2, Key, Eye, EyeOff } from 'lucide-react';
+import { Users, Shield, Edit2, Ban, CheckCircle, Trash2, Key, Eye, EyeOff, Building2 } from 'lucide-react';
 
 const UserGrid = () => {
-  const { users, toggleSuspendUser, deleteUser, updateUser } = useContext(AgencyContext);
+  const { users, businesses, toggleSuspendUser, deleteUser, updateUser } = useContext(AgencyContext);
 
   // Estados Para Modal De Edición
   const [editingUser, setEditingUser] = useState(null);
@@ -58,57 +58,82 @@ const UserGrid = () => {
               <th className="p-3">ID / Username</th>
               <th className="p-3">Nombre Visible</th>
               <th className="p-3">Rol</th>
+              <th className="p-3">Empresa</th>
               <th className="p-3">Estado</th>
               <th className="p-3 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/60">
-            {users.map((u) => (
-              <tr key={u.id} className="hover:bg-slate-800/20 transition-colors">
-                <td className="p-3 font-mono font-medium text-white">{u.id}</td>
-                <td className="p-3">{u.name}</td>
-                <td className="p-3">{getRoleBadge(u.role)}</td>
-                <td className="p-3">
-                  {u.isSuspended ? (
-                    <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-1 w-max">
-                      <Ban size={12} /> Suspendido
-                    </span>
-                  ) : (
-                    <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 w-max">
-                      <CheckCircle size={12} /> Activo
-                    </span>
-                  )}
-                </td>
-                <td className="p-3 text-right space-x-2">
-                  {/* Botón Editar */}
-                  <button 
-                    onClick={() => handleOpenEdit(u)}
-                    className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
-                    title="Editar Credenciales"
-                  >
-                    <Edit2 size={16} />
-                  </button>
+            {users.map((u) => {
+              // Búsqueda de la empresa asociada si el usuario es cliente
+              const userBusiness = u.role === 'client' && u.businessId 
+                ? businesses.find(b => b.id === u.businessId) 
+                : null;
 
-                  {/* Botón Suspender / Activar */}
-                  <button 
-                    onClick={() => toggleSuspendUser(u.id, !!u.isSuspended)}
-                    className={`p-2 rounded-lg transition-colors ${u.isSuspended ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-amber-400 hover:bg-amber-500/10'}`}
-                    title={u.isSuspended ? "Reactivar Acceso" : "Suspender Acceso"}
-                  >
-                    <Ban size={16} />
-                  </button>
+              return (
+                <tr key={u.id} className="hover:bg-slate-800/20 transition-colors">
+                  <td className="p-3 font-mono font-medium text-white">{u.id}</td>
+                  <td className="p-3">{u.name}</td>
+                  <td className="p-3">{getRoleBadge(u.role)}</td>
+                  
+                  {/* Columna de Empresa */}
+                  <td className="p-3">
+                    {u.role === 'client' ? (
+                      userBusiness ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-indigo-300 bg-indigo-950/40 px-2.5 py-1 rounded-lg border border-indigo-800/40 font-medium">
+                          <Building2 size={13} className="text-indigo-400 shrink-0" />
+                          {userBusiness.name}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-slate-500 italic">Sin asignar</span>
+                      )
+                    ) : (
+                      <span className="text-xs text-slate-600">—</span>
+                    )}
+                  </td>
 
-                  {/* Botón Eliminar */}
-                  <button 
-                    onClick={() => deleteUser(u.id)}
-                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
-                    title="Eliminar Usuario"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  <td className="p-3">
+                    {u.isSuspended ? (
+                      <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center gap-1 w-max">
+                        <Ban size={12} /> Suspendido
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 w-max">
+                        <CheckCircle size={12} /> Activo
+                      </span>
+                    )}
+                  </td>
+                  <td className="p-3 text-right space-x-2">
+                    {/* Botón Editar */}
+                    <button 
+                      onClick={() => handleOpenEdit(u)}
+                      className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
+                      title="Editar Credenciales"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+
+                    {/* Botón Suspender / Activar */}
+                    <button 
+                      onClick={() => toggleSuspendUser(u.id, !!u.isSuspended)}
+                      className={`p-2 rounded-lg transition-colors ${u.isSuspended ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-amber-400 hover:bg-amber-500/10'}`}
+                      title={u.isSuspended ? "Reactivar Acceso" : "Suspender Acceso"}
+                    >
+                      <Ban size={16} />
+                    </button>
+
+                    {/* Botón Eliminar */}
+                    <button 
+                      onClick={() => deleteUser(u.id)}
+                      className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                      title="Eliminar Usuario"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
