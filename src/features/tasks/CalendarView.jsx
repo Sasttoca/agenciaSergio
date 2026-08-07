@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { AgencyContext } from '../../context/AgencyContext';
 import CalendarHeader from './components/CalendarHeader';
 import CalendarGrid from './components/CalendarGrid';
-import { X, CheckCircle, Clock, Edit2, Trash2 } from 'lucide-react';
+import { X, CheckCircle, Clock, Edit2, Trash2, Building2, User } from 'lucide-react';
 
 const CalendarView = () => {
   const { 
@@ -178,6 +178,9 @@ const CalendarView = () => {
                   const isCompleted = task.status === 'Realizada';
                   const isEditing = editingTaskId === task.id;
 
+                  // Obtenemos los detalles de la empresa asignada a esta tarea
+                  const taskBusiness = businesses.find(b => b.id === task.businessId);
+
                   // Vista de Formulario Inline para Edición
                   if (isEditing) {
                     return (
@@ -250,8 +253,26 @@ const CalendarView = () => {
                             {task.status}
                           </span>
                         </div>
+
+                        {/* Badges Informativos: EXCLUSIVOS para Administrador */}
+                        {isAdmin && taskBusiness && (
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            <span className="inline-flex items-center gap-1 text-[11px] bg-slate-800/90 text-indigo-300 px-2 py-0.5 rounded-md border border-slate-700/60 font-medium">
+                              <Building2 size={12} className="text-indigo-400 shrink-0" />
+                              {taskBusiness.name}
+                            </span>
+
+                            {taskBusiness.workerId && (
+                              <span className="inline-flex items-center gap-1 text-[11px] bg-slate-800/90 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700/60 font-medium">
+                                <User size={12} className="text-slate-400 shrink-0" />
+                                {taskBusiness.workerId}
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         {task.notes && (
-                          <p className="text-xs text-slate-400 mt-1 italic break-words">
+                          <p className="text-xs text-slate-400 mt-2 italic break-words">
                             {task.notes}
                           </p>
                         )}
@@ -259,7 +280,7 @@ const CalendarView = () => {
 
                       {/* Acciones EXCLUSIVAS para Administrador */}
                       {isAdmin && (
-                        <div className="flex items-center gap-1 ml-2">
+                        <div className="flex items-center gap-1 ml-2 shrink-0">
                           <button
                             onClick={(e) => handleStartEdit(e, task)}
                             className="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors rounded-lg hover:bg-slate-800"
