@@ -2,7 +2,7 @@ import React, { useState, useContext } from 'react';
 import { AgencyContext } from '../../context/AgencyContext';
 import CalendarHeader from './components/CalendarHeader';
 import CalendarGrid from './components/CalendarGrid';
-import { X, CheckCircle, Clock } from 'lucide-react';
+import { X, CheckCircle, Clock, Edit2, Trash2 } from 'lucide-react';
 
 const CalendarView = () => {
   const { 
@@ -10,6 +10,8 @@ const CalendarView = () => {
     tasks, 
     businesses, 
     toggleTaskStatus, 
+    editTask,
+    deleteTask,
     today 
   } = useContext(AgencyContext);
 
@@ -19,6 +21,11 @@ const CalendarView = () => {
   
   // Estado para controlar la ventana emergente del día seleccionado
   const [selectedDayData, setSelectedDayData] = useState(null);
+
+  // Estados para la edición inline de tareas dentro del modal
+  const [editingTaskId, setEditingTaskId] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editNotes, setEditNotes] = useState('');
 
   const isAdmin = currentUser?.role === 'admin';
   const isClient = currentUser?.role === 'client';
@@ -75,6 +82,30 @@ const CalendarView = () => {
     setSelectedDayData({ dateStr, dayTasks });
   };
 
+  // Iniciar el modo de edición de una tarea
+  const handleStartEdit = (e, task) => {
+    e.stopPropagation();
+    setEditingTaskId(task.id);
+    setEditTitle(task.title);
+    setEditNotes(task.notes || '');
+  };
+
+  // Guardar cambios de la tarea en Firestore
+  const handleSaveEdit = async (e, taskId) => {
+    e.stopPropagation();
+    if (!editTitle.trim()) return;
+    await editTask(taskId, editTitle, editNotes);
+    setEditingTaskId(null);
+  };
+
+  // Eliminar la tarea de Firestore
+  const handleDeleteTask = async (e, taskId, title) => {
+    e.stopPropagation();
+    if (window.confirm(`¿Estás seguro de que deseas eliminar la tarea "${title}"?`)) {
+      await deleteTask(taskId);
+    }
+  };
+
   // Mantiene las tareas del modal sincronizadas en tiempo real con el contexto global
   const currentSelectedTasks = selectedDayData 
     ? visibleTasks.filter(t => t.dueDate === selectedDayData.dateStr) 
@@ -128,7 +159,10 @@ const CalendarView = () => {
                 </p>
               </div>
               <button 
-                onClick={() => setSelectedDayData(null)}
+                onClick={() => {
+                  setSelectedDayData(null);
+                  setEditingTaskId(null);
+                }}
                 className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800/60 transition-colors"
               >
                 <X size={20} />
@@ -142,10 +176,51 @@ const CalendarView = () => {
               ) : (
                 currentSelectedTasks.map(task => {
                   const isCompleted = task.status === 'Realizada';
+                  const isEditing = editingTaskId === task.id;
+
+                  // Vista de Formulario Inline para Edición
+                  if (isEditing) {
+                    return (
+                      <div key={task.id} className="bg-slate-900 border border-indigo-500/50 p-3 rounded-xl space-y-2">
+                        <input
+                          type="text"
+                          value={editTitle}
+                          onChange={(e) => setEditTitle(e.target.value)}
+                          className="w-full bg-slate-800 text-white text-sm p-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500"
+                          placeholder="Título de la tarea"
+                        />
+                        <textarea
+                          value={editNotes}
+                          onChange={(e) => setEditNotes(e.target.value)}
+                          className="w-full bg-slate-800 text-white text-xs p-2 rounded-lg border border-slate-700 focus:outline-none focus:border-indigo-500"
+                          placeholder="Notas / Descripción"
+                          rows={2}
+                        />
+                        <div className="flex justify-end gap-2 pt-1">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingTaskId(null);
+                            }}
+                            className="px-3 py-1 text-xs text-slate-400 hover:text-white transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            onClick={(e) => handleSaveEdit(e, task.id)}
+                            className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition-colors"
+                          >
+                            Guardar
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Vista Regular de la Tarea
                   return (
                     <div
                       key={task.id}
-                      // Solo permite marcar/desmarcar si NO es cliente
                       onClick={() => !isClient && toggleTaskStatus(task.id)}
                       className={`p-4 rounded-xl border transition-all flex items-start gap-3 ${
                         !isClient 
@@ -181,6 +256,26 @@ const CalendarView = () => {
                           </p>
                         )}
                       </div>
+
+                      {/* Acciones EXCLUSIVAS para Administrador */}
+                      {isAdmin && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            onClick={(e) => handleStartEdit(e, task)}
+                            className="p-1.5 text-slate-400 hover:text-indigo-400 transition-colors rounded-lg hover:bg-slate-800"
+                            title="Editar tarea"
+                          >
+                            <Edit2 size={15} />
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteTask(e, task.id, task.title)}
+                            className="p-1.5 text-slate-400 hover:text-red-400 transition-colors rounded-lg hover:bg-slate-800"
+                            title="Eliminar tarea"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })
@@ -190,7 +285,10 @@ const CalendarView = () => {
             {/* Pie del Modal */}
             <div className="mt-4 pt-3 border-t border-slate-800/60 flex justify-end">
               <button
-                onClick={() => setSelectedDayData(null)}
+                onClick={() => {
+                  setSelectedDayData(null);
+                  setEditingTaskId(null);
+                }}
                 className="px-4 py-2 text-xs font-semibold bg-slate-800 text-slate-300 rounded-xl hover:bg-slate-700 transition-colors"
               >
                 Cerrar

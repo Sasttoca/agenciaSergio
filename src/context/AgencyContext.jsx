@@ -36,8 +36,12 @@ export const AgencyProvider = ({ children }) => {
       const loadedWorkers = await authService.getWorkers();
       const loadedUsers = await userService.getUsers();
       
+      // Limpiamos las tareas con más de 15 días en Firestore
+      const deletedIds = await taskService.cleanOldTasks(loadedTasks);
+      const activeTasks = loadedTasks.filter(t => !deletedIds.includes(t.id));
+
       setBusinesses(loadedBusinesses);
-      setTasks(loadedTasks);
+      setTasks(activeTasks);
       setSuggestions(loadedSuggestions);
       setWorkers(loadedWorkers);
       setUsers(loadedUsers);
