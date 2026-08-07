@@ -6,12 +6,31 @@ Una aplicación web orientada a la gestión operativa de agencias de marketing d
 
 ## 🚀 Novedades de la Versión Actual
 
-La aplicación ha completado la migración total a una **solución en la nube en tiempo real**, utilizando **Firebase** como *Backend-as-a-Service (BaaS)*.
+### 📌 Gestión y Depuración Automática de Tareas
 
-* **Autenticación en la Nube:** Creación de la colección `users` en Firestore para validar credenciales y roles dinámicamente sin exponer datos en el código fuente.
-* **Servicios Asíncronos Refactorizados:** Integración de `authService.js` y adaptación asíncrona de la sesión global en `AgencyContext.jsx` y `useAuth.js`.
-* **Mejoras de UI y UX en Autenticación:** Incorporación del estado de carga con spinner (`Loader2`) en la vista de inicio de sesión (`LoginView.jsx`).
-* **Estandarización de Código:** Limpieza y formato uniforme en todos los comentarios del sistema.
+El sistema incluye funcionalidades avanzadas para la gestión del ciclo de vida de las tareas dentro del módulo de calendario, permitiendo un control granular según los roles de usuario y garantizando el rendimiento de la base de datos mediante depuración automática.
+
+---
+
+#### 1. 🛠️ Gestión Manual de Tareas (Edición y Eliminación)
+
+Dentro de la vista de calendario (`CalendarView.jsx`), al hacer clic sobre un día específico se despliega una ventana emergente (modal) con la lista detallada de tareas programadas.
+
+* **Edición Inline (`Admin`):** Los usuarios con rol de administrador pueden modificar el título y las notas/descripciones de cualquier tarea en tiempo real directo desde el modal.
+* **Eliminación Manual (`Admin`):** Se habilita la opción de eliminar tareas individuales mediante confirmación previa.
+* **Cambio de Estado (`Admin` / `Worker`):** Los administradores y trabajadores asignados pueden alternar el estado de las tareas entre `Pendiente` y `Realizada`.
+* **Restricción de Rol (`Client`):** Los usuarios con rol de cliente disponen de vista de solo lectura, impidiendo la modificación o eliminación de tareas.
+
+---
+
+#### 2. 🧹 Depuración Automática a los 15 Días (`Spark Plan Friendly`)
+
+Para evitar el consumo innecesario de almacenamiento en Firestore y mantener la aplicación dentro de los límites del plan gratuito de Firebase:
+
+* **Marca de Tiempo (`createdAt`):** Al registrar una nueva tarea a través de `taskService.addTask()`, el sistema guarda automáticamente la fecha y hora de creación en formato ISO (`YYYY-MM-DDTHH:mm:ss.sssZ`).
+* **Verificación al Iniciar:** En la carga inicial de datos dentro de `AgencyContext.jsx`, se ejecuta el método `taskService.cleanOldTasks()`.
+* **Cálculo de Antigüedad:** El sistema compara la fecha actual contra la propiedad `createdAt` de cada tarea. Aquellas que superen los 15 días ($15 \times 24 \times 60 \times 60 \times 1000 \text{ ms}$) son identificadas.
+* **Eliminación en Lote:** Se ejecutan las peticiones de eliminación directa en Firestore en paralelo (`Promise.all`) y se remueven del estado local reactivo de React de forma transparente para el usuario.
 
 ---
 
