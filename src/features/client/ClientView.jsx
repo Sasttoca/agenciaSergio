@@ -3,6 +3,8 @@ import { AgencyContext } from '../../context/AgencyContext';
 import CalendarView from '../tasks/CalendarView';
 import SuggestionBox from './SuggestionBox';
 import { Building2, Tag, UserCheck, LogOut } from 'lucide-react';
+// Importación del logo WebP
+import logoApp from '../../assets/logo.webp';
 
 const ClientView = () => {
   const { currentUser, businesses, logout } = useContext(AgencyContext);
@@ -15,11 +17,16 @@ const ClientView = () => {
       {/* Header exclusivo para Cliente */}
       <header className="h-16 bg-[#0B132B] border-b border-slate-800/80 px-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white text-sm shadow-lg shadow-indigo-600/20">
-            A
+          {/* Reemplazo del avatar contenedor de la 'A' por el logo blanco */}
+          <div className="w-8 h-8 flex items-center justify-center">
+            <img 
+              src={logoApp} 
+              alt="Tap Social Logo" 
+              className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]" 
+            />
           </div>
           <div>
-            <h1 className="text-sm font-bold text-white tracking-wide leading-none">AgencySergio</h1>
+            <h1 className="text-sm font-bold text-white tracking-wide leading-none">Tap Social</h1>
             <span className="text-[10px] text-indigo-400 font-medium tracking-wider uppercase">Portal de Cliente</span>
           </div>
         </div>

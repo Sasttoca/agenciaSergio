@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { AgencyContext } from '../../../context/AgencyContext';
 import { Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react';
+import logoApp from '../../../assets/logo.webp'; 
 
 const LoginView = () => {
   const { login } = useContext(AgencyContext);
@@ -14,7 +15,6 @@ const LoginView = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Consulta Asíncrona A Firestore A Través Del AgencyContext
     const result = await login(username, password);
 
     if (result && !result.success) {
@@ -26,10 +26,19 @@ const LoginView = () => {
   return (
     <div className="min-h-screen bg-[#060814] flex items-center justify-center p-4">
       <form onSubmit={handleSubmit} className="bg-[#0B132B] p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-800/80">
-        <div className="flex justify-center mb-6 text-indigo-500">
-          <Lock size={48} />
+        
+        {/* Render del logo WebP en blanco con un suave brillo púrpura de fondo */}
+        <div className="flex justify-center mb-6">
+          <img 
+            src={logoApp} 
+            alt="TAP SOCIAL Logo" 
+            className="w-24 h-auto object-contain -mb-3 drop-shadow-[0_0_12px_rgba(168,85,247,0.35)]"
+          />
         </div>
-        <h2 className="text-2xl font-bold text-center mb-6 text-white">AgencySergio Login</h2>
+        
+        <h2 className="text-xl font-bold text-center mb-6 text-slate-200">
+          LOGIN TAP SOCIAL
+        </h2>
         
         {/* Input De Usuario */}
         <div className="mb-4">

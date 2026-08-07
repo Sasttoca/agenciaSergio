@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { AgencyContext } from '../../context/AgencyContext';
 import { LayoutDashboard, Briefcase, Calendar, Users, ShieldAlert, LogOut, User } from 'lucide-react';
+import logoApp from '../../assets/logo.webp';
 
 const MainLayout = ({ activeTab, setActiveTab, children }) => {
   const { currentUser, logout } = useContext(AgencyContext);
@@ -23,13 +24,17 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
       <aside className="w-64 bg-[#0B132B] border-r border-slate-800/80 flex flex-col justify-between hidden md:flex">
         <div>
           {/* Logo Agencia */}
-          <div className="p-6 border-b border-slate-800/60 flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-indigo-600 rounded-xl flex items-center justify-center font-black text-white text-sm tracking-wider shadow-lg shadow-indigo-600/20">
-              A
+          <div className="p-6 border-b border-slate-800/60 flex items-center gap-3">
+            <div className="w-9 h-9 flex items-center justify-center">
+              <img 
+                src={logoApp} 
+                alt="Tap Social Logo" 
+                className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(168,85,247,0.3)]" 
+              />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-white tracking-wide leading-none">AgencySergio</h1>
-              <span className="text-[10px] text-indigo-400 font-medium tracking-wider uppercase">Agencia de Marketing</span>
+              <h1 className="text-sm font-bold text-white tracking-wide leading-none">Tap Social</h1>
+              <span className="text-[10px] text-indigo-400 font-medium tracking-wider uppercase">Community Manager</span>
             </div>
           </div>
 
