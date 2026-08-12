@@ -78,12 +78,18 @@ export const AgencyProvider = ({ children }) => {
     setCurrentUser(null);
   };
 
-  // Filtros Reactivos Basados En El Estado En Memoria
+  // Filtros Reactivos Basados En El Estado En Memoria (Soporta Múltiples Encargados)
   const getFilteredBusinesses = () => {
     if (!currentUser) return [];
-    return currentUser.role === 'admin' 
-      ? businesses 
-      : businesses.filter(b => b.workerId === currentUser.name);
+    if (currentUser.role === 'admin') return businesses;
+    
+    return businesses.filter(b => {
+      const isDirectWorker = b.workerId === currentUser.name;
+      const isInWorkerIds = Array.isArray(b.workerIds) && (
+        b.workerIds.includes(currentUser.id) || b.workerIds.includes(currentUser.name)
+      );
+      return isDirectWorker || isInWorkerIds;
+    });
   };
 
   const getFilteredTasks = () => {
@@ -108,13 +114,27 @@ export const AgencyProvider = ({ children }) => {
     setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
-  // 3. Agregar Negocio Totalmente Vacío En Firestore
-  const addBusiness = async (name, industry, workerId) => {
-    const newBusiness = await businessService.addBusiness({ name, industry, workerId });
+  // 3. Agregar Negocio En Firestore (Acepta workerId o workerIds)
+  const addBusiness = async (name, industry, workerId, workerIds = []) => {
+    const newBusiness = await businessService.addBusiness({ name, industry, workerId, workerIds });
     setBusinesses(prev => [...prev, newBusiness]);
   };
 
-  // 3.1. Eliminar Negocio Y Sus Tareas Asociadas (Eliminación En Cascada)
+  // 3.1. Editar Negocio En Firestore
+  const updateBusiness = async (businessId, updatedFields) => {
+    try {
+      if (businessService.updateBusiness) {
+        await businessService.updateBusiness(businessId, updatedFields);
+      }
+      setBusinesses(prev => prev.map(b => b.id === businessId ? { ...b, ...updatedFields } : b));
+      return { success: true };
+    } catch (error) {
+      console.error("Error al actualizar el negocio en el contexto:", error);
+      return { success: false, message: error.message };
+    }
+  };
+
+  // 3.2. Eliminar Negocio Y Sus Tareas Asociadas (Eliminación En Cascada)
   const deleteBusiness = async (businessId) => {
     try {
       const tasksToDelete = tasks.filter(t => t.businessId === businessId);
@@ -232,6 +252,7 @@ export const AgencyProvider = ({ children }) => {
       toggleBusinessExpansion,
       toggleTaskStatus,
       addBusiness,
+      updateBusiness,
       deleteBusiness,
       addSuggestion,
       clearSuggestions,

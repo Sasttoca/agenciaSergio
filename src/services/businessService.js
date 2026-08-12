@@ -1,5 +1,5 @@
 import { db } from './firebase'; 
-import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 // Nombre de la colección en Firestore
 const COLLECTION_NAME = 'businesses';
@@ -30,7 +30,8 @@ export const businessService = {
       const docRef = await addDoc(collection(db, COLLECTION_NAME), {
         name: newBusiness.name,
         industry: newBusiness.industry,
-        workerId: newBusiness.workerId
+        workerId: newBusiness.workerId || '',
+        workerIds: newBusiness.workerIds || []
       });
       
       return { id: docRef.id, ...newBusiness };
@@ -40,7 +41,19 @@ export const businessService = {
     }
   },
 
-  // 3. Eliminar un negocio de la nube por su ID
+  // 3. Actualizar los datos de un negocio en la nube
+  updateBusiness: async (businessId, updatedFields) => {
+    try {
+      const docRef = doc(db, COLLECTION_NAME, businessId);
+      await updateDoc(docRef, updatedFields);
+      return { id: businessId, ...updatedFields };
+    } catch (error) {
+      console.error("Error al actualizar el negocio en Firestore: ", error);
+      throw error;
+    }
+  },
+
+  // 4. Eliminar un negocio de la nube por su ID
   deleteBusiness: async (businessId) => {
     try {
       const docRef = doc(db, COLLECTION_NAME, businessId);
