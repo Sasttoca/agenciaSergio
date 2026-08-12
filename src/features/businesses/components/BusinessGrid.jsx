@@ -3,9 +3,12 @@ import { Briefcase, User, Trash2, AlertTriangle, Pencil, X, Check, Users } from 
 import { AgencyContext } from '../../../context/AgencyContext';
 
 const BusinessGrid = ({ businesses: propBusinesses }) => {
-  // Consumimos el contexto con las funciones de eliminación, edición y lista de usuarios/workers
-  const { deleteBusiness, updateBusiness, getFilteredBusinesses, workers, users } = useContext(AgencyContext);
+  // Consumimos el contexto con las funciones de eliminación, edición, lista de usuarios/workers y el usuario actual
+  const { deleteBusiness, updateBusiness, getFilteredBusinesses, workers, users, currentUser } = useContext(AgencyContext);
   
+  // Validamos si el usuario actual tiene el rol de administrador
+  const isAdmin = currentUser?.role === 'admin';
+
   // Estado para controlar qué negocio se quiere eliminar
   const [businessToDelete, setBusinessToDelete] = useState(null);
 
@@ -113,23 +116,25 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
                       <Briefcase size={24} />
                     </div>
 
-                    {/* Acciones de Edición y Eliminación */}
-                    <div className="flex items-center gap-1">
-                      <button 
-                        onClick={() => handleEditClick(business)}
-                        className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all duration-200 cursor-pointer"
-                        title="Editar negocio"
-                      >
-                        <Pencil size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteClick(business)}
-                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 cursor-pointer"
-                        title="Eliminar negocio"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                    {/* Acciones de Edición y Eliminación EXCLUSIVAS del Administrador */}
+                    {isAdmin && (
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={() => handleEditClick(business)}
+                          className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all duration-200 cursor-pointer"
+                          title="Editar negocio"
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteClick(business)}
+                          className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 cursor-pointer"
+                          title="Eliminar negocio"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <h4 className="text-xl font-bold text-white">{business.name}</h4>
@@ -150,8 +155,8 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
         </div>
       </div>
 
-      {/* MODAL DE EDICIÓN DE NEGOCIO */}
-      {businessToEdit && (
+      {/* MODAL DE EDICIÓN DE NEGOCIO (Solo Administrador) */}
+      {businessToEdit && isAdmin && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#0B132B] border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
             
@@ -251,8 +256,8 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
         </div>
       )}
 
-      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
-      {businessToDelete && (
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN (Solo Administrador) */}
+      {businessToDelete && isAdmin && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#0B132B] border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl shadow-black/80 space-y-5">
             

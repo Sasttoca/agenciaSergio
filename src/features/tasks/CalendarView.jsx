@@ -64,7 +64,9 @@ const CalendarView = () => {
 
     let userTasks = tasks;
     if (!isAdmin) {
-      const myBusinessIds = businesses.filter(b => b.workerId === currentUser?.name).map(b => b.id);
+      const myBusinessIds = businesses
+        .filter(b => b.workerId === currentUser?.name || (Array.isArray(b.workerIds) && b.workerIds.includes(currentUser?.name)))
+        .map(b => b.id);
       userTasks = tasks.filter(t => myBusinessIds.includes(t.businessId));
     }
 
@@ -75,7 +77,9 @@ const CalendarView = () => {
   };
 
   const visibleTasks = getFilteredTasks();
-  const myBusinesses = isAdmin ? businesses : businesses.filter(b => b.workerId === currentUser?.name);
+  const myBusinesses = isAdmin 
+    ? businesses 
+    : businesses.filter(b => b.workerId === currentUser?.name || (Array.isArray(b.workerIds) && b.workerIds.includes(currentUser?.name)));
 
   // Callback para guardar el día seleccionado cuando se hace clic en una casilla
   const handleSelectDayTasks = (dateStr, dayTasks) => {
@@ -254,15 +258,15 @@ const CalendarView = () => {
                           </span>
                         </div>
 
-                        {/* Badges Informativos: EXCLUSIVOS para Administrador */}
-                        {isAdmin && taskBusiness && (
+                        {/* Badges Informativos: VISIBLES PARA TODOS (Admin y Worker) */}
+                        {taskBusiness && (
                           <div className="flex flex-wrap items-center gap-2 mt-2">
                             <span className="inline-flex items-center gap-1 text-[11px] bg-slate-800/90 text-indigo-300 px-2 py-0.5 rounded-md border border-slate-700/60 font-medium">
                               <Building2 size={12} className="text-indigo-400 shrink-0" />
                               {taskBusiness.name}
                             </span>
 
-                            {taskBusiness.workerId && (
+                            {isAdmin && taskBusiness.workerId && (
                               <span className="inline-flex items-center gap-1 text-[11px] bg-slate-800/90 text-slate-300 px-2 py-0.5 rounded-md border border-slate-700/60 font-medium">
                                 <User size={12} className="text-slate-400 shrink-0" />
                                 {taskBusiness.workerId}
