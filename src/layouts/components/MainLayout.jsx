@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import { AgencyContext } from '../../context/AgencyContext';
 import { LayoutDashboard, Briefcase, Calendar, Users, ShieldAlert, LogOut, User } from 'lucide-react';
 import logoApp from '../../assets/logo.webp';
@@ -17,6 +17,14 @@ const MainLayout = ({ activeTab, setActiveTab, children }) => {
 
   // Filtramos Los Elementos Del Menú Según El Rol Del Usuario Actual
   const filteredMenu = menuItems.filter(item => item.roles.includes(currentUser?.role));
+
+  // Protección Activa: Si la pestaña seleccionada no está permitida para su rol, redirigir a 'Dashboard'
+  useEffect(() => {
+    const isTabAllowed = filteredMenu.some(item => item.id === activeTab);
+    if (!isTabAllowed) {
+      setActiveTab('Dashboard');
+    }
+  }, [currentUser?.role, activeTab, filteredMenu, setActiveTab]);
 
   return (
     <div className="flex h-screen bg-[#060814] text-slate-100 overflow-hidden">

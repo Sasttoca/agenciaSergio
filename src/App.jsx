@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { AgencyContext } from './context/AgencyContext';
 import LoginView from './features/auth/components/LoginView';
 import MainLayout from './layouts/components/MainLayout';
@@ -13,6 +13,13 @@ function App() {
   const { currentUser, getFilteredBusinesses } = useContext(AgencyContext);
   const [activeTab, setActiveTab] = useState('Dashboard');
 
+  // Restablecer la pestaña a 'Dashboard' cada vez que cambia o inicia sesión un usuario
+  useEffect(() => {
+    if (currentUser) {
+      setActiveTab('Dashboard');
+    }
+  }, [currentUser?.id]);
+
   // Si No Hay Usuario Autenticado, Mostramos La Vista De Login Directamente
   if (!currentUser) {
     return <LoginView />;
@@ -23,8 +30,10 @@ function App() {
     return <ClientView />;
   }
   
-  // Renderizado Condicional De Las Pestañas Internas De La Aplicación
+  // Renderizado Condicional De Las Pestañas Internas Con Protección de Roles
   const renderContent = () => {
+    const isAdmin = currentUser.role === 'admin';
+
     switch (activeTab) {
       case 'Dashboard':
         return <DashboardOverview />;
@@ -33,9 +42,11 @@ function App() {
       case 'Tareas':
         return <CalendarView />;
       case 'Usuarios':
-        return <UsersView />; // <-- Renderizado Del Módulo De Usuarios
+        // Protección de ruta: Solo accesible por Administrador
+        return isAdmin ? <UsersView /> : <DashboardOverview />;
       case 'Administracion':
-        return <AdminView />;
+        // Protección de ruta: Solo accesible por Administrador
+        return isAdmin ? <AdminView /> : <DashboardOverview />;
       default:
         return <DashboardOverview />;
     }
