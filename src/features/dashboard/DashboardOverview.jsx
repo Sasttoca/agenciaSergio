@@ -1,3 +1,4 @@
+// features/dashboard/components/DashboardOverview.jsx
 import React, { useContext } from 'react';
 import { AgencyContext } from '../../context/AgencyContext';
 import MetricCards from './components/MetricCards';
@@ -12,7 +13,9 @@ const DashboardOverview = () => {
     getFilteredTasks, 
     expandedBusinesses, 
     toggleBusinessExpansion, 
-    toggleTaskStatus 
+    toggleTaskStatus,
+    updateTask, // <--- Importamos updateTask
+    deleteTask  // <--- Importamos deleteTask
   } = useContext(AgencyContext);
 
   const myBusinesses = getFilteredBusinesses();
@@ -24,20 +27,17 @@ const DashboardOverview = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-8">
-      {/* Encabezado Principal */}
       <div>
         <h2 className="text-3xl font-bold text-white">¡Hola de nuevo, {currentUser?.name}!</h2>
         <p className="text-slate-400 text-sm mt-1">Este es el estado operativo de tus proyectos para el día de hoy.</p>
       </div>
 
-      {/* Tarjetas de Métricas */}
       <MetricCards 
         totalBusinesses={totalBusinesses}
         pendingTasks={pendingTasks}
         completedTasks={completedTasks}
       />
 
-      {/* Grid de Contenido Condicional */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-2">
           <WorkerWorkflow 
@@ -46,6 +46,9 @@ const DashboardOverview = () => {
             expandedBusinesses={expandedBusinesses}
             onToggleExpand={toggleBusinessExpansion}
             onToggleTaskStatus={toggleTaskStatus}
+            currentUser={currentUser} // <--- Pasamos el usuario actual
+            onUpdateTask={updateTask}  // <--- Pasamos función de actualización
+            onDeleteTask={deleteTask}  // <--- Pasamos función de borrado
           />
         </div>
 
@@ -58,6 +61,7 @@ const DashboardOverview = () => {
           </div>
         )}
       </div>
+
       <div className="mt-6">
         <SuggestionsWidget />
       </div>
