@@ -6,13 +6,35 @@ Una aplicación web orientada a la gestión operativa de agencias de marketing d
 
 ## 🚀 Novedades de la Versión Actual
 
-### 📌 Gestión y Depuración Automática de Tareas
+### 💳 1. Control de Suscripciones y Cobros Quincenales
 
-El sistema incluye funcionalidades avanzadas para la gestión del ciclo de vida de las tareas dentro del módulo de calendario, permitiendo un control granular según los roles de usuario y garantizando el rendimiento de la base de datos mediante depuración automática.
+El sistema estandariza la facturación y el acceso de los clientes bajo ciclos quincenales automáticos, garantizando un control riguroso sobre las coberturas activas:
+
+* **Fechas de Corte Fijas:** Los cobros y renovaciones se calculan automáticamente los días **15** y el **último día de cada mes** (28, 29, 30 o 31 días).
+* **Gestión de Estados de Suscripción:**
+  * **Al día (`active`):** Cobertura vigente con cálculo dinámico de días restantes en tiempo real.
+  * **Periodo de Gracia (`grace_period`):** Tolerancia operativa de 48 horas (2 días) tras la fecha límite con un banner preventivo de advertencia dentro del portal del cliente.
+  * **Suspendido por Pago (`suspended`):** Bloqueo total de la interfaz del cliente (calendario, sugerencias y entregables), desplegando una pantalla de aviso con instrucciones para regularizar la cuenta.
+* **Confirmación de Pago (`Admin`):** Modal interactivo de confirmación en `BusinessGrid.jsx` para registrar el abono recibido y extender la vigencia (+1 quincena) de forma inmediata en Firestore.
 
 ---
 
-#### 1. 🛠️ Gestión Manual de Tareas (Edición y Eliminación)
+### 👥 2. Gestión Integral de Usuarios y Asignación de Empresas
+
+Se incorpora un módulo completo (`users/`) para la administración granular de identidades y accesos del sistema:
+
+* **Directorio Reactivo con Filtros Multivariable (`UserGrid.jsx`):** Búsqueda instantánea por ID o nombre visible, combinada con selectores por Rol, Empresa vinculada y Estado de cuenta.
+* **Vinculación Dinámica de Clientes:** Capacidad desde el modal de edición de asignar o reasignar la empresa cliente asociada en caso de desvinculación accidental.
+* **Exportación a Hojas de Cálculo (`Excel`):** Generación y descarga instantánea del directorio filtrado en formato `.xlsx` con anchos de columna estructurados mediante la librería `xlsx`.
+* **Suspensión y Reactivación Controlada:** Modal de confirmación para alternar el acceso de cualquier usuario (`isSuspended`) sin eliminar su registro de Firestore.
+
+---
+
+### 📌 3. Gestión y Depuración Automática de Tareas
+
+El sistema incluye funcionalidades avanzadas para la gestión del ciclo de vida de las tareas dentro del módulo de calendario, permitiendo un control granular según los roles de usuario y garantizando el rendimiento de la base de datos mediante depuración automática.
+
+#### 🛠️ Gestión Manual de Tareas (Edición y Eliminación)
 
 Dentro de la vista de calendario (`CalendarView.jsx`), al hacer clic sobre un día específico se despliega una ventana emergente (modal) con la lista detallada de tareas programadas.
 
@@ -21,9 +43,7 @@ Dentro de la vista de calendario (`CalendarView.jsx`), al hacer clic sobre un d�
 * **Cambio de Estado (`Admin` / `Worker`):** Los administradores y trabajadores asignados pueden alternar el estado de las tareas entre `Pendiente` y `Realizada`.
 * **Restricción de Rol (`Client`):** Los usuarios con rol de cliente disponen de vista de solo lectura, impidiendo la modificación o eliminación de tareas.
 
----
-
-#### 2. 🧹 Depuración Automática a los 15 Días (`Spark Plan Friendly`)
+#### 🧹 Depuración Automática a los 15 Días (`Spark Plan Friendly`)
 
 Para evitar el consumo innecesario de almacenamiento en Firestore y mantener la aplicación dentro de los límites del plan gratuito de Firebase:
 
@@ -43,10 +63,10 @@ Los accesos y permisos se gestionan dinámicamente desde Firestore según la sig
 
 | Usuario (`ID`) | Rol (`role`) | Descripción y Alcance |
 | :--- | :--- | :--- |
-| `admin` | `admin` | **Administrador Global:** Acceso total al panel operativo, métricas, gestión en cascada de negocios y asignación de tareas internas. |
+| `admin` | `admin` | **Administrador Global:** Acceso total al panel operativo, métricas, cobros quincenales, catálogo de negocios, directorio de usuarios y asignación de tareas internas. |
 | `ana` | `worker` | **Miembro del Equipo:** Acceso filtrado únicamente a los negocios y tareas donde figura como responsable asignada. |
 | `carlos` | `worker` | **Miembro del Equipo:** Acceso filtrado a su flujo de trabajo específico de medios y contenido. |
-| `cliente` | `client` | **Cliente Externo:** Vista simplificada enfocada en el estado de sus proyectos y módulo para envío de sugerencias. |
+| `cliente` | `client` | **Cliente Externo:** Vista simplificada enfocada en el estado de sus proyectos, contador quincenal de corte y módulo para envío de sugerencias. |
 
 ---
 
@@ -54,6 +74,7 @@ Los accesos y permisos se gestionan dinámicamente desde Firestore según la sig
 
 ### 1. Portal Exclusivo para Clientes (`ClientView`)
 * **Panel Personalizado:** Muestra la información de la marca asociada, sector operativo y gestor de cuenta asignado.
+* **Widget de Suscripción:** Indicador visual de la fecha de corte y contador de días restantes.
 * **Seguimiento de Proyecto:** Vista restringida de entregables y actividades del calendario vinculadas únicamente al ID de su empresa.
 * **Modo Solo Lectura:** Permite visualizar estados de tareas y detalles sin opción de modificación operativa.
 
@@ -68,18 +89,22 @@ Los accesos y permisos se gestionan dinámicamente desde Firestore según la sig
 * **Visualización Inteligente:** Activación condicional de detalles únicamente en días con actividades asignadas.
 
 ### 4. Administración Operativa y Flujo en Cascada (`AdminView` & `BusinessGrid`)
-* **Alta de Marcas:** Registro de nuevos clientes inicializados completamente limpios para personalización directa.
-* **Asignación de Tareas:** Formulario con selector nativo optimizado para tema oscuro (`scheme-dark`).
+* **Alta de Marcas:** Registro de nuevos clientes en `BusinessForm.jsx` con asignación múltiple de Community Managers y fecha inicial de cobro.
+* **Gestión de Pagos:** Botón con confirmación modal para registrar renovaciones de servicio quincenal.
 * **Eliminación en Cascada:** Al suprimir un cliente, el sistema remueve automáticamente el registro de la marca y sus tareas asociadas en Firestore para garantizar la integridad de datos.
+
+### 5. Directorio y Creación de Usuarios (`UsersView`, `UserForm` & `UserGrid`)
+* **Formulario de Registro:** Alta de nuevos colaboradores y clientes con asignación de empresa opcional.
+* **Tabla de Gestión:** Panel con filtros combinados, modal de suspensión, edición de roles/contraseñas y exportación a Excel.
 
 ---
 
 ## 🛠️ Cambios Clave en la Arquitectura
 
 * **Persistencia en la Nube:** Integración de **Cloud Firestore** para almacenar las colecciones de clientes (`businesses`), actividades (`tasks`), sugerencias (`suggestions`) y usuarios (`users`).
-* **Servicios Asíncronos:** La capa `services/` consume directamente la SDK de Firebase de manera asíncrona (`authService.js`, `businessService.js`, `taskService.js`, `suggestionService.js`), desacoplando la lógica de datos de la interfaz de usuario.
-* **Contexto Reactivo Real:** `AgencyContext.jsx` sincroniza el estado global de React con Firestore mediante peticiones asíncronas e inicialización de estados sin datos quemados en código.
-* **Seguridad de Credenciales:** Migración de la autenticación a Firestore y protección de las llaves de API mediante variables de entorno en Vite.
+* **Servicios Asíncronos:** La capa `services/` consume directamente la SDK de Firebase de manera asíncrona (`authService.js`, `businessService.js`, `taskService.js`, `suggestionService.js`, `userService.js`), desacoplando la lógica de datos de la interfaz de usuario.
+* **Contexto Reactivo Real:** `AgencyContext.jsx` sincroniza el estado global de React con Firestore mediante peticiones asíncronas, cálculo dinámico de vigencias y carga centralizada.
+* **Seguridad y Configuración:** Protección de llaves de API mediante variables de entorno en Vite (`.env.local`) y configuración de enrutamiento para despliegues en la nube (`vercel.json`).
 
 ---
 
@@ -88,10 +113,11 @@ Los accesos y permisos se gestionan dinámicamente desde Firestore según la sig
 El proyecto se encuentra estructurado de forma modular bajo el patrón de características (*feature-based architecture*). El código fuente se organiza en componentes autocontenidos dentro del directorio `src/features/`.
 
 ### Núcleo y Estado Global (`src/`)
+* **`assets/`**: Logotipos y recursos gráficos de la aplicación (`logo.webp`).
 * **`components/ui/`**: Centraliza componentes atómicos y reutilizables de la interfaz gráfica (`CustomModal.jsx`).
-* **`context/`**: Punto de control del estado global de la aplicación (`AgencyContext.jsx`). Distribuye sesión activa, empresas, tareas y sugerencias.
+* **`context/`**: Punto de control del estado global de la aplicación (`AgencyContext.jsx`). Distribuye sesión activa, empresas, tareas, sugerencias, usuarios y lógica de quincenas.
 * **`layouts/`**: Define esquemas visuales compartidos. `MainLayout.jsx` gestiona la navegación lateral y el contenedor principal.
-* **`services/`**: Capa de abstracción y persistencia asíncrona con Firebase Firestore (`authService.js`, `businessService.js`, `firebase.js`, `taskService.js`, `suggestionService.js`).
+* **`services/`**: Capa de abstracción y persistencia asíncrona con Firebase Firestore (`authService.js`, `businessService.js`, `firebase.js`, `suggestionService.js`, `taskService.js`, `userService.js`).
 
 ---
 
@@ -106,12 +132,12 @@ El proyecto se encuentra estructurado de forma modular bajo el patrón de caract
 * **Componentes y Hooks**: `LoginView.jsx` y `useAuth.js` (Custom hook para abstraer la verificación de roles y sesión activa).
 
 #### 3. `businesses/` (Módulo de Negocios)
-* **Propósito**: Visualización y gestión del catálogo de clientes de la agencia.
-* **Componentes clave**: `BusinessGrid.jsx` (Cuadrícula de empresas con modal de eliminación en cascada).
+* **Propósito**: Visualización y gestión del catálogo de clientes de la agencia y control de pagos.
+* **Componentes clave**: `BusinessGrid.jsx` (Cuadrícula de empresas con renovación quincenal y modal de eliminación en cascada).
 
 #### 4. `client/` (Módulo del Portal de Cliente)
-* **Propósito**: Experiencia dedicada y restringida para el rol de cliente.
-* **Componentes clave**: `ClientView.jsx` (Vista general de marca) y `SuggestionBox.jsx` (Caja de envío de sugerencias en tiempo real).
+* **Propósito**: Experiencia dedicada y restringida para el rol de cliente con validación de pago.
+* **Componentes clave**: `ClientView.jsx` (Vista general de marca con widget de suscripción y bloqueo por corte) y `SuggestionBox.jsx` (Caja de envío de sugerencias en tiempo real).
 
 #### 5. `dashboard/` (Módulo de Métricas y Flujo Operativo)
 * **Propósito**: Consolidación de indicadores, tareas del día a día y supervisión general.
@@ -121,21 +147,27 @@ El proyecto se encuentra estructurado de forma modular bajo el patrón de caract
 * **Propósito**: Organización temporal y control de estados de las actividades programadas.
 * **Componentes clave**: `CalendarView.jsx`, `CalendarHeader.jsx` y `CalendarGrid.jsx` (Cuadrícula mensual/semanal reactiva).
 
+#### 7. `users/` (Módulo de Gestión de Usuarios)
+* **Propósito**: Registro de cuentas, control de accesos, reasignación de empresas y descarga de reportes.
+* **Componentes clave**: `UsersView.jsx`, `UserForm.jsx` (Alta de usuarios) y `UserGrid.jsx` (Tabla de directorio con filtros, edición y exportación a Excel).
+
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
 * **React** (Estructura basada en Hooks, Context API y Arquitectura Modular)
 * **Vite** (Entorno de ejecución y construcción rápida de assets)
+* **Node.js** (Entorno de desarrollo y gestión de paquetes)
 * **Firebase & Cloud Firestore** (Persistencia en tiempo real, backend y autenticación mediante base de datos)
 * **Tailwind CSS v4** (Procesamiento de estilos optimizado mediante escaneo nativo)
 * **Lucide React** (Biblioteca de vectores para iconografía dinámica)
+* **XLSX (SheetJS)** (Generación y exportación de archivos estructurados en formato Excel)
 
 ---
 
 ## 💻 Instalación y Despliegue Local
 
-1. Clonar el repositorio correspondiente.
-2. Instalar las dependencias del proyecto:
+1. Clonar el repositorio correspondiente:
    ```bash
-   npm install
+   git clone <https://github.com/Sasttoca/agenciaSergio.git>
+   cd agenciaSergio
