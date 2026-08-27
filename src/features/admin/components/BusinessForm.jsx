@@ -1,21 +1,25 @@
 import React, { useState, useContext } from 'react';
 import { AgencyContext } from '../../../context/AgencyContext';
-import { Building2 } from 'lucide-react';
+import { Building2, Calendar } from 'lucide-react';
 
 const BusinessForm = () => {
-  const { workers, addBusiness } = useContext(AgencyContext);
+  const { workers, addBusiness, calculateNextBillingDate } = useContext(AgencyContext);
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState('');
   const [workerId, setWorkerId] = useState('');
+  const [paidUntil, setPaidUntil] = useState(() => calculateNextBillingDate ? calculateNextBillingDate() : '');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!name || !industry || !workerId) return;
 
-    addBusiness(name, industry, workerId);
+    // Pasamos name, industry, workerId, workerIds (como array) y el paidUntil seleccionado
+    addBusiness(name, industry, workerId, [workerId], paidUntil);
+
     setName('');
     setIndustry('');
     setWorkerId('');
+    setPaidUntil(calculateNextBillingDate ? calculateNextBillingDate() : '');
   };
 
   return (
@@ -64,6 +68,23 @@ const BusinessForm = () => {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-400 font-medium block mb-1.5 flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <Calendar size={13} className="text-indigo-400" />
+              Primer Corte Quincenal / Vencimiento
+            </span>
+            <span className="text-[10px] text-slate-500 font-normal">Día 15 o fin de mes</span>
+          </label>
+          <input 
+            type="date"
+            value={paidUntil}
+            onChange={(e) => setPaidUntil(e.target.value)}
+            className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm cursor-pointer text-slate-200"
+            required
+          />
         </div>
 
         <button 

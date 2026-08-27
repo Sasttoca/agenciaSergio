@@ -1,32 +1,38 @@
 import React, { useState, useContext } from 'react';
-import { Briefcase, User, Trash2, AlertTriangle, Pencil, X, Check, Users } from 'lucide-react';
+import { Briefcase, User, Trash2, AlertTriangle, Pencil, X, Check, Users, Calendar, CreditCard, Clock, CheckCircle2 } from 'lucide-react';
 import { AgencyContext } from '../../../context/AgencyContext';
 
 const BusinessGrid = ({ businesses: propBusinesses }) => {
-  // Consumimos el contexto con las funciones de eliminación, edición, lista de usuarios/workers y el usuario actual
-  const { deleteBusiness, updateBusiness, getFilteredBusinesses, workers, users, currentUser } = useContext(AgencyContext);
+  const { 
+    deleteBusiness, 
+    updateBusiness, 
+    renewBusinessSubscription,
+    getSubscriptionStatus,
+    getFilteredBusinesses, 
+    workers, 
+    users, 
+    currentUser 
+  } = useContext(AgencyContext);
   
-  // Validamos si el usuario actual tiene el rol de administrador
   const isAdmin = currentUser?.role === 'admin';
 
-  // Estado para controlar qué negocio se quiere eliminar
+  // Estados para modales de confirmación y edición
   const [businessToDelete, setBusinessToDelete] = useState(null);
+  const [businessToRenew, setBusinessToRenew] = useState(null);
+  const [renewingId, setRenewingId] = useState(null);
 
-  // Estado para controlar qué negocio se está editando y los datos de su formulario
   const [businessToEdit, setBusinessToEdit] = useState(null);
   const [editFormData, setEditFormData] = useState({
     name: '',
     industry: '',
-    selectedWorkers: []
+    selectedWorkers: [],
+    paidUntil: ''
   });
 
-  // Lógica de obtención de negocios (prop o contexto)
   const businesses = propBusinesses || getFilteredBusinesses();
-
-  // Lista de gestores disponibles (workers o admin)
   const availableWorkers = (users || workers || []).filter(u => u.role === 'worker' || u.role === 'admin');
 
-  // --- LOGICA DE ELIMINACIÓN ---
+  // --- LÓGICA DE ELIMINACIÓN ---
   const handleDeleteClick = (business) => {
     setBusinessToDelete(business);
   };
@@ -38,11 +44,24 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
     }
   };
 
+  // --- LÓGICA DE RENOVACIÓN DE SUSCRIPCIÓN CON CONFIRMACIÓN ---
+  const handleRenewClick = (business) => {
+    setBusinessToRenew(business);
+  };
+
+  const handleConfirmRenew = async () => {
+    if (!businessToRenew) return;
+    const businessId = businessToRenew.id;
+    setRenewingId(businessId);
+    await renewBusinessSubscription(businessId);
+    setRenewingId(null);
+    setBusinessToRenew(null);
+  };
+
   // --- LÓGICA DE EDICIÓN ---
   const handleEditClick = (business) => {
     setBusinessToEdit(business);
 
-    // Mapeo inicial de encargados actuales (soporta formato antiguo en string o formato nuevo en array)
     let initialSelected = [];
     if (Array.isArray(business.workerIds) && business.workerIds.length > 0) {
       initialSelected = business.workerIds;
@@ -55,7 +74,8 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
     setEditFormData({
       name: business.name || '',
       industry: business.industry || '',
-      selectedWorkers: initialSelected
+      selectedWorkers: initialSelected,
+      paidUntil: business.paidUntil || ''
     });
   };
 
@@ -75,25 +95,30 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
     e.preventDefault();
     if (!businessToEdit) return;
 
-    // Primer encargado como fallback de compatibilidad para vistas legadas
     const primaryWorker = editFormData.selectedWorkers[0] || 'Sin asignar';
 
     await updateBusiness(businessToEdit.id, {
       name: editFormData.name,
       industry: editFormData.industry,
       workerId: primaryWorker,
-      workerIds: editFormData.selectedWorkers
+      workerIds: editFormData.selectedWorkers,
+      paidUntil: editFormData.paidUntil
     });
 
     setBusinessToEdit(null);
   };
 
-  // Función auxiliar para renderizar el texto de encargados en la tarjeta
   const renderAssignedWorkers = (business) => {
     if (Array.isArray(business.workerIds) && business.workerIds.length > 0) {
       return business.workerIds.join(', ');
     }
     return business.workerId || 'Sin asignar';
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return 'No definida';
+    const [year, month, day] = dateStr.split('-');
+    return `${day}/${month}/${year}`;
   };
 
   return (
@@ -105,57 +130,145 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
               No hay negocios registrados en este momento.
             </p>
           ) : (
-            businesses.map(business => (
-              <div 
-                key={business.id}
-                className="relative bg-[#0B132B] p-6 rounded-2xl border border-slate-800/80 shadow-lg shadow-black/20 flex flex-col justify-between hover:border-slate-700 transition-colors group"
-              >
-                <div>
-                  <div className="flex justify-between items-start">
-                    <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl w-fit mb-4">
-                      <Briefcase size={24} />
+            businesses.map(business => {
+              const sub = getSubscriptionStatus(business);
+
+              return (
+                <div 
+                  key={business.id}
+                  className="relative bg-[#0B132B] p-6 rounded-2xl border border-slate-800/80 shadow-lg shadow-black/20 flex flex-col justify-between hover:border-slate-700 transition-colors group"
+                >
+                  <div>
+                    <div className="flex justify-between items-start">
+                      <div className="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl w-fit mb-4">
+                        <Briefcase size={24} />
+                      </div>
+
+                      {/* Acciones EXCLUSIVAS del Administrador */}
+                      {isAdmin && (
+                        <div className="flex items-center gap-1">
+                          <button 
+                            onClick={() => handleRenewClick(business)}
+                            disabled={renewingId === business.id}
+                            className="p-2 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition-all duration-200 cursor-pointer"
+                            title="Registrar pago (+1 Quincena)"
+                          >
+                            <CreditCard size={18} className={renewingId === business.id ? 'animate-pulse text-emerald-400' : ''} />
+                          </button>
+                          <button 
+                            onClick={() => handleEditClick(business)}
+                            className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all duration-200 cursor-pointer"
+                            title="Editar negocio"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteClick(business)}
+                            className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 cursor-pointer"
+                            title="Eliminar negocio"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Acciones de Edición y Eliminación EXCLUSIVAS del Administrador */}
-                    {isAdmin && (
-                      <div className="flex items-center gap-1">
-                        <button 
-                          onClick={() => handleEditClick(business)}
-                          className="p-2 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-xl transition-all duration-200 cursor-pointer"
-                          title="Editar negocio"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteClick(business)}
-                          className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 cursor-pointer"
-                          title="Eliminar negocio"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                    <h4 className="text-xl font-bold text-white">{business.name}</h4>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Sector: <span className="text-slate-300 font-medium">{business.industry}</span>
+                    </p>
 
-                  <h4 className="text-xl font-bold text-white">{business.name}</h4>
-                  <p className="text-sm text-slate-400 mt-1">
-                    Sector: <span className="text-slate-300 font-medium">{business.industry}</span>
-                  </p>
+                    {/* Badge Informativo de Suscripción Quincenal */}
+                    <div className="mt-4 p-3 bg-[#060814] rounded-xl border border-slate-800/80 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 flex items-center gap-1.5">
+                          <Calendar size={13} className="text-indigo-400" />
+                          Próximo Corte:
+                        </span>
+                        <span className="text-slate-200 font-medium">{formatDate(sub.nextBillingDate)}</span>
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-800/50">
+                        <span className="text-slate-400">Estado:</span>
+                        {sub.status === 'active' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                            <CheckCircle2 size={11} />
+                            Al día ({sub.daysRemaining} {sub.daysRemaining === 1 ? 'día' : 'días'})
+                          </span>
+                        )}
+                        {sub.status === 'grace_period' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+                            <Clock size={11} />
+                            En gracia ({Math.abs(sub.daysRemaining)}d vencido)
+                          </span>
+                        )}
+                        {sub.status === 'suspended' && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                            <AlertTriangle size={11} />
+                            Suspendido
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-slate-800/60 mt-6 pt-4 flex items-center gap-2 text-sm text-slate-400">
+                    <User size={16} className="text-indigo-400 shrink-0" />
+                    <span className="truncate">
+                      Encargado(s): <strong className="text-slate-200 font-semibold">{renderAssignedWorkers(business)}</strong>
+                    </span>
+                  </div>
                 </div>
-                
-                <div className="border-t border-slate-800/60 mt-6 pt-4 flex items-center gap-2 text-sm text-slate-400">
-                  <User size={16} className="text-indigo-400 shrink-0" />
-                  <span className="truncate">
-                    Encargado(s): <strong className="text-slate-200 font-semibold">{renderAssignedWorkers(business)}</strong>
-                  </span>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
 
-      {/* MODAL DE EDICIÓN DE NEGOCIO (Solo Administrador) */}
+      {/* MODAL DE CONFIRMACIÓN DE REGISTRO DE PAGO / RENOVACIÓN */}
+      {businessToRenew && isAdmin && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-[#0B132B] border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                <CreditCard size={22} />
+              </div>
+              <h3 className="text-lg font-bold text-white">Confirmar Registro de Pago</h3>
+            </div>
+
+            <div className="space-y-2">
+              <p className="text-slate-300 text-sm leading-relaxed">
+                ¿Deseas registrar el pago recibido y renovar la suscripción de <strong className="text-white font-semibold">"{businessToRenew.name}"</strong> por una quincena más?
+              </p>
+              <div className="text-xs text-slate-400 bg-[#060814] border border-slate-800 p-3 rounded-xl space-y-1">
+                <p>• La vigencia se extenderá automáticamente al siguiente corte (día 15 o fin de mes).</p>
+                <p>• El portal del cliente se mantendrá activo y al día.</p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setBusinessToRenew(null)}
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-sm transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmRenew}
+                disabled={renewingId === businessToRenew.id}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/20 transition-colors cursor-pointer flex items-center gap-2"
+              >
+                <Check size={16} />
+                <span>Confirmar Pago</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE EDICIÓN DE NEGOCIO */}
       {businessToEdit && isAdmin && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#0B132B] border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
@@ -199,6 +312,18 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
                   onChange={(e) => setEditFormData({ ...editFormData, industry: e.target.value })}
                   className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 mb-1">
+                  Fecha Límite / Próximo Corte Quincenal
+                </label>
+                <input
+                  type="date"
+                  value={editFormData.paidUntil}
+                  onChange={(e) => setEditFormData({ ...editFormData, paidUntil: e.target.value })}
+                  className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
                 />
               </div>
 
@@ -251,16 +376,14 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
                 </button>
               </div>
             </form>
-
           </div>
         </div>
       )}
 
-      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN (Solo Administrador) */}
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN */}
       {businessToDelete && isAdmin && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
           <div className="bg-[#0B132B] border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl shadow-black/80 space-y-5">
-            
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-red-500/10 text-red-400 rounded-xl">
                 <AlertTriangle size={22} />
@@ -291,7 +414,6 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
                 Eliminar Cliente
               </button>
             </div>
-
           </div>
         </div>
       )}

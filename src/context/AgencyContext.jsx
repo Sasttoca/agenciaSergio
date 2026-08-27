@@ -27,6 +27,71 @@ export const AgencyProvider = ({ children }) => {
 
   const today = getTodayFormatted();
 
+  // LÓGICA DE SUSCRIPCIONES Y COBROS QUINCENALES
+
+  // Calcula la siguiente fecha de corte a partir de una fecha base
+  const calculateNextBillingDate = (fromDate = new Date()) => {
+    const base = new Date(fromDate);
+    const year = base.getFullYear();
+    const month = base.getMonth();
+    const day = base.getDate();
+
+    if (day < 15) {
+      // Siguiente corte: Día 15 del mes actual
+      return `${year}-${(month + 1).toString().padStart(2, '0')}-15`;
+    } else {
+      // Siguiente corte: Último día del mes actual (28, 29, 30 o 31)
+      const lastDayOfMonth = new Date(year, month + 1, 0).getDate();
+      if (day < lastDayOfMonth) {
+        return `${year}-${(month + 1).toString().padStart(2, '0')}-${lastDayOfMonth.toString().padStart(2, '0')}`;
+      } else {
+        // Si ya pasó o es el fin de mes, el siguiente corte es el 15 del siguiente mes
+        const nextMonth = new Date(year, month + 1, 15);
+        const nextYear = nextMonth.getFullYear();
+        const nextM = (nextMonth.getMonth() + 1).toString().padStart(2, '0');
+        return `${nextYear}-${nextM}-15`;
+      }
+    }
+  };
+
+  // Obtiene el estado de suscripción detallado de un negocio
+  const getSubscriptionStatus = (business) => {
+    if (!business) return { status: 'active', daysRemaining: 0, nextBillingDate: today };
+
+    // Si el negocio no tiene fecha registrada, asignamos el siguiente corte por defecto
+    const targetDateStr = business.paidUntil || business.nextBillingDate || calculateNextBillingDate();
+    
+    const todayDate = new Date(`${today}T00:00:00`);
+    const billingDate = new Date(`${targetDateStr}T00:00:00`);
+    
+    // Diferencia en días
+    const diffTime = billingDate - todayDate;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays >= 0) {
+      return {
+        status: 'active', // Al día
+        daysRemaining: diffDays,
+        nextBillingDate: targetDateStr,
+        isGracePeriod: false
+      };
+    } else if (diffDays >= -2) {
+      return {
+        status: 'grace_period', // En periodo de gracia (2 días de tolerancia)
+        daysRemaining: diffDays,
+        nextBillingDate: targetDateStr,
+        isGracePeriod: true
+      };
+    } else {
+      return {
+        status: 'suspended', // Suspendido por falta de pago
+        daysRemaining: diffDays,
+        nextBillingDate: targetDateStr,
+        isGracePeriod: false
+      };
+    }
+  };
+
   // 1. Carga De Datos Asíncrona Desde Firestore
   useEffect(() => {
     const fetchData = async () => {
@@ -114,9 +179,16 @@ export const AgencyProvider = ({ children }) => {
     setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
   };
 
-  // 3. Agregar Negocio En Firestore (Acepta workerId o workerIds)
-  const addBusiness = async (name, industry, workerId, workerIds = []) => {
-    const newBusiness = await businessService.addBusiness({ name, industry, workerId, workerIds });
+  // 3. Agregar Negocio En Firestore (Inicializa con la fecha del siguiente corte)
+  const addBusiness = async (name, industry, workerId, workerIds = [], initialPaidUntil = null) => {
+    const paidUntil = initialPaidUntil || calculateNextBillingDate();
+    const newBusiness = await businessService.addBusiness({ 
+      name, 
+      industry, 
+      workerId, 
+      workerIds,
+      paidUntil
+    });
     setBusinesses(prev => [...prev, newBusiness]);
   };
 
@@ -134,7 +206,42 @@ export const AgencyProvider = ({ children }) => {
     }
   };
 
-  // 3.2. Eliminar Negocio Y Sus Tareas Asociadas (Eliminación En Cascada)
+  // 3.2. Renovar Suscripción / Registrar Pago de Negocio (+1 Quincena)
+  const renewBusinessSubscription = async (businessId) => {
+    try {
+      const business = businesses.find(b => b.id === businessId);
+      if (!business) return { success: false, message: 'Negocio no encontrado.' };
+
+      // Tomamos la fecha actual de corte o la fecha de hoy si ya estaba vencido
+      const currentPaidUntil = business.paidUntil ? new Date(`${business.paidUntil}T00:00:00`) : new Date();
+      const baseDate = currentPaidUntil < new Date() ? new Date() : currentPaidUntil;
+      
+      const year = baseDate.getFullYear();
+      const month = baseDate.getMonth();
+      const day = baseDate.getDate();
+
+      let nextPaidUntil = '';
+      if (day <= 15) {
+        // Si el corte fue el 15, el siguiente corte es fin de mes
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        nextPaidUntil = `${year}-${(month + 1).toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+      } else {
+        // Si el corte fue fin de mes, el siguiente corte es el 15 del siguiente mes
+        const nextMonthDate = new Date(year, month + 1, 15);
+        const nYear = nextMonthDate.getFullYear();
+        const nMonth = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
+        nextPaidUntil = `${nYear}-${nMonth}-15`;
+      }
+
+      await updateBusiness(businessId, { paidUntil: nextPaidUntil });
+      return { success: true, nextPaidUntil };
+    } catch (error) {
+      console.error("Error al renovar suscripción:", error);
+      return { success: false, message: error.message };
+    }
+  };
+
+  // 3.3. Eliminar Negocio Y Sus Tareas Asociadas (Eliminación En Cascada)
   const deleteBusiness = async (businessId) => {
     try {
       const tasksToDelete = tasks.filter(t => t.businessId === businessId);
@@ -253,6 +360,9 @@ export const AgencyProvider = ({ children }) => {
       toggleTaskStatus,
       addBusiness,
       updateBusiness,
+      renewBusinessSubscription,
+      getSubscriptionStatus,
+      calculateNextBillingDate,
       deleteBusiness,
       addSuggestion,
       clearSuggestions,

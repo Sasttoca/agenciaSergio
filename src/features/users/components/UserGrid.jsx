@@ -2,7 +2,7 @@ import React, { useState, useContext, useMemo } from 'react';
 import { AgencyContext } from '../../../context/AgencyContext';
 import { 
   Users, Shield, Edit2, Ban, CheckCircle, Trash2, Key, Eye, EyeOff, 
-  Building2, Download, Search, AlertTriangle
+  Building2, Download, Search, AlertTriangle 
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -14,6 +14,7 @@ const UserGrid = () => {
   const [editName, setEditName] = useState('');
   const [editPassword, setEditPassword] = useState('');
   const [editRole, setEditRole] = useState('worker');
+  const [editBusinessId, setEditBusinessId] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
 
   // Estado Para Modal De Confirmación De Suspensión
@@ -83,22 +84,27 @@ const UserGrid = () => {
     setEditName(user.name);
     setEditPassword(user.password || '');
     setEditRole(user.role);
+    setEditBusinessId(user.businessId || '');
   };
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     if (!editingUser) return;
 
-    await updateUser(editingUser.id, {
+    const payload = {
       name: editName,
       password: editPassword,
       role: editRole
-    });
+    };
 
+    if (editRole === 'client') {
+      payload.businessId = editBusinessId;
+    }
+
+    await updateUser(editingUser.id, payload);
     setEditingUser(null);
   };
 
-  // Confirmar cambio de estado de suspensión
   const handleConfirmToggleSuspend = async () => {
     if (!userToToggle) return;
     const isSuspended = userToToggle.isSuspended === true || userToToggle.isSuspended === 'true';
@@ -132,7 +138,7 @@ const UserGrid = () => {
 
         <button
           onClick={handleExportExcel}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/20"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-emerald-600/20 cursor-pointer"
         >
           <Download size={15} />
           <span>Exportar Excel</span>
@@ -227,7 +233,9 @@ const UserGrid = () => {
                             {userBusiness.name}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-500 italic">Sin asignar</span>
+                          <span className="text-xs text-rose-400/80 bg-rose-500/10 px-2.5 py-1 rounded-lg border border-rose-500/20 font-medium">
+                            Sin asignar
+                          </span>
                         )
                       ) : (
                         <span className="text-xs text-slate-600">—</span>
@@ -249,16 +257,15 @@ const UserGrid = () => {
                     <td className="p-3 text-right space-x-2">
                       <button 
                         onClick={() => handleOpenEdit(u)}
-                        className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
-                        title="Editar Credenciales"
+                        className="p-2 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors cursor-pointer"
+                        title="Editar Credenciales y Empresa"
                       >
                         <Edit2 size={16} />
                       </button>
 
-                      {/* Botón Abre el Modal de Confirmación */}
                       <button 
                         onClick={() => setUserToToggle(u)}
-                        className={`p-2 rounded-lg transition-colors ${isSuspended ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-amber-400 hover:bg-amber-500/10'}`}
+                        className={`p-2 rounded-lg transition-colors cursor-pointer ${isSuspended ? 'text-emerald-400 hover:bg-emerald-500/10' : 'text-amber-400 hover:bg-amber-500/10'}`}
                         title={isSuspended ? "Reactivar Acceso" : "Suspender Acceso"}
                       >
                         <Ban size={16} />
@@ -266,7 +273,7 @@ const UserGrid = () => {
 
                       <button 
                         onClick={() => deleteUser(u.id)}
-                        className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
+                        className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                         title="Eliminar Usuario"
                       >
                         <Trash2 size={16} />
@@ -280,9 +287,9 @@ const UserGrid = () => {
         </table>
       </div>
 
-      {/* MODAL EDICIÓN DE CREDENCIALES */}
+      {/* MODAL EDICIÓN DE CREDENCIALES Y EMPRESA */}
       {editingUser && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-[#0B132B] border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Key className="text-indigo-500" size={18} /> Editar Usuario ({editingUser.id})
@@ -313,7 +320,7 @@ const UserGrid = () => {
                   <button
                     type="button"
                     onClick={() => setShowEditPassword(!showEditPassword)}
-                    className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 transition-colors"
+                    className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
                   >
                     {showEditPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -333,17 +340,38 @@ const UserGrid = () => {
                 </select>
               </div>
 
+              {editRole === 'client' && (
+                <div>
+                  <label className="text-xs text-slate-400 font-medium block mb-1.5 flex items-center gap-1.5">
+                    <Building2 size={14} className="text-indigo-400" /> Asignar Empresa Cliente
+                  </label>
+                  <select 
+                    value={editBusinessId}
+                    onChange={(e) => setEditBusinessId(e.target.value)}
+                    className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm appearance-none cursor-pointer text-slate-200"
+                    required
+                  >
+                    <option value="">Seleccionar Empresa...</option>
+                    {businesses.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} ({b.industry})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-2">
                 <button 
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="w-1/2 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-colors text-sm"
+                  className="w-1/2 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-colors text-sm cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit"
-                  className="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold transition-colors text-sm shadow-lg shadow-indigo-600/10"
+                  className="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold transition-colors text-sm shadow-lg shadow-indigo-600/10 cursor-pointer"
                 >
                   Guardar Cambios
                 </button>
@@ -355,7 +383,7 @@ const UserGrid = () => {
 
       {/* MODAL CONFIRMACIÓN DE SUSPENSIÓN / REACTIVACIÓN */}
       {userToToggle && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
           <div className="bg-[#0B132B] border border-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center">
             <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${
               userToToggle.isSuspended ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
@@ -377,13 +405,13 @@ const UserGrid = () => {
             <div className="flex gap-3">
               <button 
                 onClick={() => setUserToToggle(null)}
-                className="w-1/2 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-colors text-sm"
+                className="w-1/2 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-colors text-sm cursor-pointer"
               >
                 Cancelar
               </button>
               <button 
                 onClick={handleConfirmToggleSuspend}
-                className={`w-1/2 py-2.5 rounded-xl font-bold transition-colors text-sm text-white ${
+                className={`w-1/2 py-2.5 rounded-xl font-bold transition-colors text-sm text-white cursor-pointer ${
                   userToToggle.isSuspended 
                     ? 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/20' 
                     : 'bg-amber-600 hover:bg-amber-500 shadow-lg shadow-amber-600/20'
