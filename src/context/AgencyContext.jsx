@@ -186,7 +186,7 @@ export const AgencyProvider = ({ children }) => {
       name, 
       industry, 
       workerId, 
-      workerIds,
+      workerIds, 
       paidUntil
     });
     setBusinesses(prev => [...prev, newBusiness]);
@@ -212,25 +212,29 @@ export const AgencyProvider = ({ children }) => {
       const business = businesses.find(b => b.id === businessId);
       if (!business) return { success: false, message: 'Negocio no encontrado.' };
 
-      // Tomamos la fecha actual de corte o la fecha de hoy si ya estaba vencido
-      const currentPaidUntil = business.paidUntil ? new Date(`${business.paidUntil}T00:00:00`) : new Date();
-      const baseDate = currentPaidUntil < new Date() ? new Date() : currentPaidUntil;
-      
-      const year = baseDate.getFullYear();
-      const month = baseDate.getMonth();
-      const day = baseDate.getDate();
-
       let nextPaidUntil = '';
-      if (day <= 15) {
-        // Si el corte fue el 15, el siguiente corte es fin de mes
-        const lastDay = new Date(year, month + 1, 0).getDate();
-        nextPaidUntil = `${year}-${(month + 1).toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+
+      if (business.paidUntil) {
+        // Leemos directamente año, mes y día de la cadena YYYY-MM-DD para evitar desfases de zona horaria
+        const [yearStr, monthStr, dayStr] = business.paidUntil.split('-');
+        let year = parseInt(yearStr, 10);
+        let month = parseInt(monthStr, 10) - 1; // 0 indexado en JS
+        const day = parseInt(dayStr, 10);
+
+        if (day <= 15) {
+          // El corte previo era día 15 -> Pasa al último día del MISMO mes
+          const lastDay = new Date(year, month + 1, 0).getDate();
+          nextPaidUntil = `${year}-${(month + 1).toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+        } else {
+          // El corte previo era fin de mes -> Pasa al día 15 del SIGUIENTE mes
+          const nextMonthDate = new Date(year, month + 1, 15);
+          const nYear = nextMonthDate.getFullYear();
+          const nMonth = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
+          nextPaidUntil = `${nYear}-${nMonth}-15`;
+        }
       } else {
-        // Si el corte fue fin de mes, el siguiente corte es el 15 del siguiente mes
-        const nextMonthDate = new Date(year, month + 1, 15);
-        const nYear = nextMonthDate.getFullYear();
-        const nMonth = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
-        nextPaidUntil = `${nYear}-${nMonth}-15`;
+        // Si no tenía fecha previa asignada, parte del siguiente corte general
+        nextPaidUntil = calculateNextBillingDate();
       }
 
       await updateBusiness(businessId, { paidUntil: nextPaidUntil });

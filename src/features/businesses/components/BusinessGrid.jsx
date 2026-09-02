@@ -323,7 +323,8 @@ const BusinessGrid = ({ businesses: propBusinesses }) => {
                   type="date"
                   value={editFormData.paidUntil}
                   onChange={(e) => setEditFormData({ ...editFormData, paidUntil: e.target.value })}
-                  className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm cursor-pointer"
                 />
               </div>
 
