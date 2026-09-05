@@ -268,16 +268,28 @@ export const AgencyProvider = ({ children }) => {
     setTasks(prev => [...prev, newTask]);
   };
 
-  // 5. Editar Tarea En Firestore
-  const editTask = async (taskId, updatedTitle, updatedNotes) => {
-    await taskService.updateTask(taskId, { title: updatedTitle, notes: updatedNotes });
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, title: updatedTitle, notes: updatedNotes } : t));
+  // 5. Actualizar Tarea En Firestore (Soporta actualización de objeto: title, notes, dueDate, status)
+  const updateTask = async (taskId, updatedFields) => {
+    try {
+      await taskService.updateTask(taskId, updatedFields);
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updatedFields } : t));
+      return { success: true };
+    } catch (error) {
+      console.error("Error al actualizar tarea en el contexto:", error);
+      return { success: false, message: error.message };
+    }
   };
 
   // 6. Eliminar Tarea En Firestore
   const deleteTask = async (taskId) => {
-    await taskService.deleteTask(taskId);
-    setTasks(tasks.filter(t => t.id !== taskId));
+    try {
+      await taskService.deleteTask(taskId);
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      return { success: true };
+    } catch (error) {
+      console.error("Error al eliminar tarea:", error);
+      return { success: false, message: error.message };
+    }
   };
 
   // 7. Función Para Agregar Una Sugerencia
@@ -371,8 +383,9 @@ export const AgencyProvider = ({ children }) => {
       addSuggestion,
       clearSuggestions,
       addTask,
+      updateTask,
+      editTask: updateTask,
       deleteTask,
-      editTask,
       addUser,
       updateUser,
       toggleSuspendUser,

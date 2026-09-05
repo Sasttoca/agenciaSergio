@@ -22,6 +22,7 @@ const WorkerWorkflow = ({
   const [editTitle, setEditTitle] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Estado para Confirmación de Borrado
   const [taskToDelete, setTaskToDelete] = useState(null);
@@ -44,15 +45,21 @@ const WorkerWorkflow = ({
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
-    if (!taskToEdit || !onUpdateTask) return;
+    if (!taskToEdit || !onUpdateTask || isSubmitting) return;
 
-    await onUpdateTask(taskToEdit.id, {
-      title: editTitle,
-      notes: editNotes,
-      dueDate: editDueDate
-    });
-
-    setTaskToEdit(null);
+    try {
+      setIsSubmitting(true);
+      await onUpdateTask(taskToEdit.id, {
+        title: editTitle,
+        notes: editNotes,
+        dueDate: editDueDate
+      });
+      setTaskToEdit(null);
+    } catch (error) {
+      console.error("Error al guardar la tarea:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Manejador de Borrado
@@ -142,7 +149,7 @@ const WorkerWorkflow = ({
                   ) : (
                     businessTasks.map(task => (
                       <div 
-                        key={task.id}
+                        key={task.id} 
                         className={`p-3 rounded-xl border transition-all flex items-start justify-between group/task ${
                           task.status === 'Realizada'
                             ? 'bg-[#060814]/20 border-slate-900 opacity-50'
@@ -177,14 +184,14 @@ const WorkerWorkflow = ({
                           {/* Botones Exclusivos para Administrador */}
                           {isAdmin && (
                             <div className="flex items-center gap-1 ml-1 opacity-80 group-hover/task:opacity-100 transition-opacity">
-                              <button
+                              <button 
                                 onClick={() => handleOpenEdit(task)}
                                 className="p-1 text-slate-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition-colors"
                                 title="Editar tarea"
                               >
                                 <Pencil size={14} />
                               </button>
-                              <button
+                              <button 
                                 onClick={() => setTaskToDelete(task)}
                                 className="p-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors"
                                 title="Eliminar tarea"
@@ -240,7 +247,8 @@ const WorkerWorkflow = ({
                   type="date"
                   value={editDueDate}
                   onChange={(e) => setEditDueDate(e.target.value)}
-                  className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
+                  style={{ colorScheme: 'dark' }}
+                  className="w-full p-3 border border-slate-800 bg-[#060814] text-white rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm cursor-pointer"
                   required
                 />
               </div>
@@ -249,15 +257,17 @@ const WorkerWorkflow = ({
                 <button 
                   type="button"
                   onClick={() => setTaskToEdit(null)}
-                  className="w-1/2 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-colors text-sm"
+                  disabled={isSubmitting}
+                  className="w-1/2 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium hover:bg-slate-800 transition-colors text-sm disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button 
                   type="submit"
-                  className="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold transition-colors text-sm shadow-lg shadow-indigo-600/20"
+                  disabled={isSubmitting}
+                  className="w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold transition-colors text-sm shadow-lg shadow-indigo-600/20 disabled:opacity-50"
                 >
-                  Guardar Cambios
+                  {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
               </div>
             </form>
