@@ -101,7 +101,7 @@ export const AgencyProvider = ({ children }) => {
       const loadedWorkers = await authService.getWorkers();
       const loadedUsers = await userService.getUsers();
       
-      // Limpiamos las tareas con más de 15 días en Firestore
+      // Limpiamos las tareas realizadas hace 30 días o más (según la hora del servidor de Firebase)
       const deletedIds = await taskService.cleanOldTasks(loadedTasks);
       const activeTasks = loadedTasks.filter(t => !deletedIds.includes(t.id));
 
@@ -168,15 +168,15 @@ export const AgencyProvider = ({ children }) => {
     setExpandedBusinesses(prev => ({ ...prev, [businessId]: prev[businessId] === false }));
   };
 
-  // 2. Modificar Estado De Tarea En La Nube
+  // 2. Modificar Estado De Tarea En La Nube (al completar se guarda completedAt con hora del servidor)
   const toggleTaskStatus = async (taskId) => {
     const taskToUpdate = tasks.find(t => t.id === taskId);
     if (!taskToUpdate) return;
     
     const newStatus = taskToUpdate.status === 'Pendiente' ? 'Realizada' : 'Pendiente';
     
-    await taskService.updateTask(taskId, { status: newStatus });
-    setTasks(tasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+    const applied = await taskService.updateTask(taskId, { status: newStatus });
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...applied } : t));
   };
 
   // 3. Agregar Negocio En Firestore (Inicializa con la fecha del siguiente corte)
@@ -245,12 +245,12 @@ export const AgencyProvider = ({ children }) => {
     }
   };
 
-  // 3.3. Eliminar Negocio Y Sus Tareas Asociadas (Eliminación En Cascada)
+  // 3.3. Eliminar Negocio Y Sus Tareas Asociadas (Eliminación En Cascada, con respaldo de cada tarea)
   const deleteBusiness = async (businessId) => {
     try {
       const tasksToDelete = tasks.filter(t => t.businessId === businessId);
 
-      const deletePromises = tasksToDelete.map(t => taskService.deleteTask(t.id));
+      const deletePromises = tasksToDelete.map(t => taskService.deleteTask(t.id, 'cascade'));
       await Promise.all(deletePromises);
 
       await businessService.deleteBusiness(businessId);
@@ -271,8 +271,8 @@ export const AgencyProvider = ({ children }) => {
   // 5. Actualizar Tarea En Firestore (Soporta actualización de objeto: title, notes, dueDate, status)
   const updateTask = async (taskId, updatedFields) => {
     try {
-      await taskService.updateTask(taskId, updatedFields);
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updatedFields } : t));
+      const applied = await taskService.updateTask(taskId, updatedFields);
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...applied } : t));
       return { success: true };
     } catch (error) {
       console.error("Error al actualizar tarea en el contexto:", error);
@@ -283,7 +283,7 @@ export const AgencyProvider = ({ children }) => {
   // 6. Eliminar Tarea En Firestore
   const deleteTask = async (taskId) => {
     try {
-      await taskService.deleteTask(taskId);
+      await taskService.deleteTask(taskId, 'manual');
       setTasks(prev => prev.filter(t => t.id !== taskId));
       return { success: true };
     } catch (error) {
