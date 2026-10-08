@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
+import TaskStatusFilter from '../../../components/ui/TaskStatusFilter';
 
 const CalendarHeader = ({
   currentDate,
@@ -9,6 +10,8 @@ const CalendarHeader = ({
   setViewMode,
   filterBusiness,
   setFilterBusiness,
+  statusFilter,
+  setStatusFilter,
   businesses,
   isAdmin
 }) => {
@@ -45,7 +48,7 @@ const CalendarHeader = ({
         </div>
       </div>
 
-      {/* Bloque Inferior: Filtros de Vista y Negocios */}
+      {/* Bloque Inferior: Filtros de Vista, Negocios y Estado */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-center gap-2.5 w-full lg:w-auto">
         <select 
           className="w-full lg:w-auto bg-[#060814] px-3 py-2 rounded-xl text-xs sm:text-sm text-slate-200 border border-slate-800 focus:ring-2 focus:ring-indigo-500/50 outline-none cursor-pointer" 
@@ -69,6 +72,10 @@ const CalendarHeader = ({
             </option>
           ))}
         </select>
+
+        <div className="sm:col-span-2 lg:col-span-1">
+          <TaskStatusFilter value={statusFilter} onChange={setStatusFilter} />
+        </div>
       </div>
     </div>
   );

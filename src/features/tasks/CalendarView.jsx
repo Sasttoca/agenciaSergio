@@ -15,6 +15,8 @@ const CalendarView = () => {
     today 
   } = useContext(AgencyContext);
 
+  const [statusFilter, setStatusFilter] = useState('all');
+
   const [currentDate, setCurrentDate] = useState(new Date()); 
   const [viewMode, setViewMode] = useState('monthly');
   const [filterBusiness, setFilterBusiness] = useState('all');
@@ -58,8 +60,10 @@ const CalendarView = () => {
 
   // Filtro de tareas según el rol y el negocio seleccionado
   const getFilteredTasks = () => {
+    const matchesStatus = (t) => statusFilter === 'all' || t.status === statusFilter;
+
     if (currentUser?.role === 'client') {
-      return tasks.filter(t => t.businessId === currentUser.businessId);
+      return tasks.filter(t => t.businessId === currentUser.businessId && matchesStatus(t));
     }
 
     let userTasks = tasks;
@@ -70,10 +74,11 @@ const CalendarView = () => {
       userTasks = tasks.filter(t => myBusinessIds.includes(t.businessId));
     }
 
-    if (filterBusiness === 'all') {
-      return userTasks;
+    if (filterBusiness !== 'all') {
+      userTasks = userTasks.filter(t => t.businessId === filterBusiness);
     }
-    return userTasks.filter(t => t.businessId === filterBusiness);
+
+    return userTasks.filter(matchesStatus);
   };
 
   const visibleTasks = getFilteredTasks();
@@ -98,7 +103,7 @@ const CalendarView = () => {
   const handleSaveEdit = async (e, taskId) => {
     e.stopPropagation();
     if (!editTitle.trim()) return;
-    await editTask(taskId, editTitle, editNotes);
+    await editTask(taskId, { title: editTitle, notes: editNotes });
     setEditingTaskId(null);
   };
 
@@ -126,6 +131,8 @@ const CalendarView = () => {
           setViewMode={setViewMode}
           filterBusiness={filterBusiness}
           setFilterBusiness={setFilterBusiness}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
           businesses={myBusinesses}
           isAdmin={isAdmin}
         />

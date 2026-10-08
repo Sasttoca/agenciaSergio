@@ -2,7 +2,12 @@ import React from 'react';
 import { Calendar, CheckCircle2, Circle } from 'lucide-react';
 
 const AdminInternalTasks = ({ tasks, onToggleStatus }) => {
-  const adminTasks = tasks.filter(t => t.businessId === 'admin');
+  const adminTasks = tasks
+    .filter(t => t.businessId === 'admin')
+    .sort((a, b) => {
+      if (a.status !== b.status) return a.status === 'Pendiente' ? -1 : 1;
+      return (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31');
+    });
 
   return (
     <div className="bg-[#0B132B] rounded-2xl border border-slate-800/80 p-6 shadow-lg shadow-black/20">

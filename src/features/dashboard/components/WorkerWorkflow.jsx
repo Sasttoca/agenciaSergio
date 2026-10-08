@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, Calendar, CheckCircle2, Circle, Search, 
   Building2, X, Pencil, Trash2, AlertTriangle, Edit3 
 } from 'lucide-react';
+import TaskStatusFilter from '../../../components/ui/TaskStatusFilter';
 
 const WorkerWorkflow = ({ 
   businesses, 
@@ -15,6 +16,7 @@ const WorkerWorkflow = ({
   onUpdateTask,
   onDeleteTask
 }) => {
+  const [statusFilter, setStatusFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
 
   // Estados para Edición de Tarea
@@ -98,6 +100,9 @@ const WorkerWorkflow = ({
         </div>
       </div>
 
+       <TaskStatusFilter value={statusFilter} onChange={setStatusFilter} /> 
+
+      
       {businesses.length === 0 ? (
         <p className="text-slate-500 text-sm bg-[#0B132B] p-6 rounded-2xl border border-slate-800 text-center">
           No tienes negocios asignados actualmente.
@@ -109,11 +114,17 @@ const WorkerWorkflow = ({
         </div>
       ) : (
         filteredBusinesses.map(business => {
-          const businessTasks = tasks.filter(t => t.businessId === business.id);
+          const allBusinessTasks = tasks.filter(t => t.businessId === business.id);
+          const businessTasks = allBusinessTasks
+            .filter(t => statusFilter === 'all' || t.status === statusFilter)
+            .sort((a, b) => {
+              if (a.status !== b.status) return a.status === 'Pendiente' ? -1 : 1;
+              return (a.dueDate || '9999-12-31').localeCompare(b.dueDate || '9999-12-31');
+            });
           const isExpanded = expandedBusinesses[business.id] !== false;
 
-          const totalTasks = businessTasks.length;
-          const completedTasks = businessTasks.filter(t => t.status === 'Realizada').length;
+          const totalTasks = allBusinessTasks.length;
+          const completedTasks = allBusinessTasks.filter(t => t.status === 'Realizada').length;
           const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
           return (
@@ -132,7 +143,7 @@ const WorkerWorkflow = ({
                 </div>
                 <div className="flex items-center gap-3 text-slate-400">
                   <span className="text-xs bg-[#060814] border border-slate-800 px-2.5 py-1 rounded-full text-slate-300 font-medium">
-                    {businessTasks.filter(t => t.status === 'Pendiente').length} pendientes
+                    {allBusinessTasks.filter(t => t.status === 'Pendiente').length} pendientes
                   </span>
                   <span className="text-xs bg-[#060814] border border-slate-800 px-2.5 py-1 rounded-full text-slate-300 font-medium">
                     {percentage}% completado
@@ -144,12 +155,12 @@ const WorkerWorkflow = ({
               {/* Lista de Tareas */}
               {isExpanded && (
                 <div className="border-t border-slate-800/60 p-4 bg-[#060814]/30 space-y-2">
-                  {businessTasks.length === 0 ? (
+                  {allBusinessTasks.length === 0 ? (
                     <p className="text-xs text-slate-500 py-2 pl-2">Este negocio no tiene tareas programadas.</p>
                   ) : (
                     businessTasks.map(task => (
                       <div 
-                        key={task.id} 
+                        key={task.id}   
                         className={`p-3 rounded-xl border transition-all flex items-start justify-between group/task ${
                           task.status === 'Realizada'
                             ? 'bg-[#060814]/20 border-slate-900 opacity-50'
